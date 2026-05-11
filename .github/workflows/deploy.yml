@@ -38,6 +38,7 @@ jobs:
 
       - name: Deploy to Container App
         run: |
+          az provider register -n Microsoft.App --wait \
           az containerapp update \
             --name ${{ env.CONTAINER_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
