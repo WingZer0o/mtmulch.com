@@ -3,6 +3,12 @@ name: Build and Deploy
 on:
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "Cargo.toml"
+      - "Dockerfile"
+      - ".github/workflows/deploy.yml"
+      - "migrations/**"
 
 permissions:
   id-token: write
@@ -15,9 +21,50 @@ env:
   CONTAINER_APP: rust-playground
 
 jobs:
-  build-and-deploy:
+  filter:
     runs-on: ubuntu-latest
+    outputs:
+      migrations: ${{ steps.filter.outputs.migrations }}
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            migrations:
+              - 'migrations/**'
+            code:
+              - 'src/**'
+              - 'Cargo.toml'
+              - 'Dockerfile'
+              - '.github/workflows/deploy.yml'
 
+  migrate:
+    needs: filter
+    if: needs.filter.outputs.migrations == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install libpq
+        run: sudo apt-get install -y libpq-dev
+
+      - name: Install diesel_cli
+        run: cargo install diesel_cli --no-default-features --features postgres
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: diesel migration run
+
+  build-and-deploy:
+    needs: [filter, migrate]
+    if: |
+      always() &&
+      needs.filter.outputs.code == 'true' &&
+      (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
