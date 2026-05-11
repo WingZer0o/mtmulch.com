@@ -62,6 +62,17 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
 
+      - name: Add runner IP to PostgreSQL firewall
+        id: firewall
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az postgres flexible-server firewall-rule create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name rust-playground \
+            --rule-name github-actions-runner \
+            --start-ip-address $RUNNER_IP \
+            --end-ip-address $RUNNER_IP
+
       - name: Install libpq
         run: sudo apt-get install -y libpq-dev
 
@@ -72,6 +83,15 @@ jobs:
         env:
           DATABASE_URL: postgres://${{ secrets.AZURE_CLIENT_ID }}:${{ steps.db-token.outputs.token }}@rust-playground.postgres.database.azure.com:5432/rust_playground?sslmode=require
         run: diesel migration run
+
+      - name: Remove runner IP from PostgreSQL firewall
+        if: always()
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name rust-playground \
+            --rule-name github-actions-runner \
+            --yes
 
   build-and-deploy:
     needs: [filter, migrate]
