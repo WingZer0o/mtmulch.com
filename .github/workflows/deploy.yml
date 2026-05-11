@@ -55,12 +55,14 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Get Azure AD token for PostgreSQL
+      - name: Get Azure AD token and service principal name for PostgreSQL
         id: db-token
         run: |
           TOKEN=$(az account get-access-token --resource-type oss-rdbms --query accessToken -o tsv)
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          SP_NAME=$(az ad sp show --id ${{ secrets.AZURE_CLIENT_ID }} --query displayName -o tsv)
+          echo "sp_name=$SP_NAME" >> $GITHUB_OUTPUT
 
       - name: Add runner IP to PostgreSQL firewall
         id: firewall
@@ -81,7 +83,7 @@ jobs:
 
       - name: Run migrations
         env:
-          DATABASE_URL: postgres://${{ secrets.AZURE_CLIENT_ID }}:${{ steps.db-token.outputs.token }}@rust-playground.postgres.database.azure.com:5432/rust_playground?sslmode=require
+          DATABASE_URL: postgres://${{ steps.db-token.outputs.sp_name }}:${{ steps.db-token.outputs.token }}@rust-playground.postgres.database.azure.com:5432/rust_playground?sslmode=require
         run: diesel migration run
 
       - name: Remove runner IP from PostgreSQL firewall
