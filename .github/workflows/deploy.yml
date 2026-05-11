@@ -83,7 +83,8 @@ jobs:
 
       - name: Run migrations
         env:
-          DATABASE_URL: postgres://${{ steps.db-token.outputs.sp_name }}:${{ steps.db-token.outputs.token }}@rust-playground.postgres.database.azure.com:5432/rust_playground?sslmode=require
+          PGPASSWORD: ${{ steps.db-token.outputs.token }}
+          DATABASE_URL: postgres://${{ steps.db-token.outputs.sp_name }}@rust-playground.postgres.database.azure.com:5432/rust_playground?sslmode=require
         run: diesel migration run
 
       - name: Remove runner IP from PostgreSQL firewall
