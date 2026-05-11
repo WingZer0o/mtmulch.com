@@ -47,6 +47,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Azure AD token for PostgreSQL
+        id: db-token
+        run: |
+          TOKEN=$(az account get-access-token --resource-type oss-rdbms --query accessToken -o tsv)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
       - name: Install libpq
         run: sudo apt-get install -y libpq-dev
 
@@ -55,7 +69,7 @@ jobs:
 
       - name: Run migrations
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: postgres://${{ secrets.AZURE_CLIENT_ID }}:${{ steps.db-token.outputs.token }}@rust-playground.postgres.database.azure.com:5432/rust_playground?sslmode=require
         run: diesel migration run
 
   build-and-deploy:
