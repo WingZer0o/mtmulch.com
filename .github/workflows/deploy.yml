@@ -1,0 +1,44 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: ${{ secrets.ACR_NAME }}.azurecr.io
+  IMAGE: rust-playground
+  RESOURCE_GROUP: Rust-Playground
+  CONTAINER_APP: rust-playground
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push image to ACR
+        run: |
+          az acr build \
+            --registry ${{ secrets.ACR_NAME }} \
+            --image ${{ env.IMAGE }}:${{ github.sha }} \
+            --image ${{ env.IMAGE }}:latest \
+            .
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}
