@@ -20,7 +20,7 @@
 
         <p class="switch">
           Don't have an account?
-          <button class="btn-link" @click="mode = 'register'">Register</button>
+          <button class="btn-link" @click="router.push('/register')">Register</button>
         </p>
       </div>
 
@@ -46,7 +46,7 @@
 
         <p class="switch">
           Already have an account?
-          <button class="btn-link" @click="mode = 'login'">Sign in</button>
+          <button class="btn-link" @click="router.push('/login')">Sign in</button>
         </p>
       </div>
 
@@ -55,15 +55,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { reactive, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const props = defineProps({
-  initialMode: { type: String, default: 'login' }
-})
+const route = useRoute()
+const router = useRouter()
 
-const mode = ref(props.initialMode)
-
-watch(() => props.initialMode, val => { mode.value = val })
+const mode = computed(() => route.path === '/register' ? 'register' : 'login')
 
 const login = reactive({ email: '', password: '' })
 const register = reactive({ email: '', password: '', confirm: '' })

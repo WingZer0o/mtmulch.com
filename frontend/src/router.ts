@@ -6,7 +6,7 @@ export default createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: Home },
-    { path: '/login', component: Auth, props: { initialMode: 'login' } },
-    { path: '/register', component: Auth, props: { initialMode: 'register' } },
+    { path: '/login', component: Auth },
+    { path: '/register', component: Auth },
   ]
 })
