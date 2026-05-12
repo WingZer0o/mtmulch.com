@@ -1,0 +1,8 @@
+{
+  "routes": [
+    {
+      "route": "/api/*",
+      "rewrite": "https://rust-playground.{your-region}.azurecontainerapps.io/api/*"
+    }
+  ]
+}
