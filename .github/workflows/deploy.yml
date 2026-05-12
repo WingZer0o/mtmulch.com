@@ -36,6 +36,7 @@ jobs:
           filters: |
             migrations:
               - 'migrations/**'
+              - '.github/workflows/deploy.yml'
             code:
               - 'src/**'
               - 'Cargo.toml'
