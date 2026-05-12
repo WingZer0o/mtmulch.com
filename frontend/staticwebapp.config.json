@@ -1,8 +1,6 @@
 {
-  "routes": [
-    {
-      "route": "/api/*",
-      "rewrite": "https://rust-playground.lemonsea-5223942e.eastus.azurecontainerapps.io/api/*"
-    }
-  ]
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/api/*"]
+  }
 }
