@@ -1,15 +1,13 @@
 <template>
-  <NavBar />
-  <main>
-    <Hero />
-    <About />
-    <Projects />
-    <Contact />
-  </main>
-  <div class="api-test">
-    <button @click="ping">Ping /hello</button>
-    <span v-if="response" :class="{ error: isError }">{{ response }}</span>
-  </div>
+  <v-app>
+    <main>
+      <Hero />
+      <About />
+      <Projects />
+      <Contact />
+    </main>
+    <NavBar />
+  </v-app>
 </template>
 
 <script setup>
