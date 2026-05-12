@@ -9,6 +9,7 @@ on:
       - "Dockerfile"
       - ".github/workflows/deploy.yml"
       - "migrations/**"
+      - "frontend/**"
 
 permissions:
   id-token: write
@@ -26,6 +27,7 @@ jobs:
     outputs:
       migrations: ${{ steps.filter.outputs.migrations }}
       code: ${{ steps.filter.outputs.code }}
+      frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -34,11 +36,13 @@ jobs:
           filters: |
             migrations:
               - 'migrations/**'
-              - '.github/workflows/deploy.yml'
             code:
               - 'src/**'
               - 'Cargo.toml'
               - 'Dockerfile'
+              - '.github/workflows/deploy.yml'
+            frontend:
+              - 'frontend/**'
               - '.github/workflows/deploy.yml'
 
   migrate:
@@ -127,3 +131,22 @@ jobs:
             --name ${{ env.CONTAINER_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}
+
+  deploy-frontend:
+    needs: [filter, build-and-deploy]
+    if: |
+      always() &&
+      needs.filter.outputs.frontend == 'true' &&
+      (needs.build-and-deploy.result == 'success' || needs.build-and-deploy.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ORANGE_ISLAND_051F6F20F }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: /frontend
+          output_location: dist
