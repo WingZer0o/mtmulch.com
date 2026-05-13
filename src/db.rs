@@ -23,21 +23,21 @@ struct ImdsToken {
 
 fn fetch_managed_identity_token() -> Result<String, String> {
     // Container Apps injects IDENTITY_ENDPOINT + IDENTITY_HEADER; fall back to
-    // the standard IMDS address used by VMs and App Service.
+    // the standard IMDS address used by VMs.
     let (url, header_name, header_value) =
         match (std::env::var("IDENTITY_ENDPOINT"), std::env::var("IDENTITY_HEADER")) {
             (Ok(ep), Ok(hdr)) => (
                 format!(
-                    "{}?resource=https://ossrdbms-auth.database.windows.net&api-version=2019-08-01",
+                    "{}?resource=https://ossrdbms-aad.database.windows.net&api-version=2019-08-01",
                     ep
                 ),
                 "X-IDENTITY-HEADER",
                 hdr,
             ),
             _ => (
-                "http://169.254.169.254/metadata/token\
+                "http://169.254.169.254/metadata/identity/oauth2/token\
                  ?api-version=2018-02-01\
-                 &resource=https://ossrdbms-auth.database.windows.net"
+                 &resource=https://ossrdbms-aad.database.windows.net"
                     .to_string(),
                 "Metadata",
                 "true".to_string(),
@@ -47,9 +47,17 @@ fn fetch_managed_identity_token() -> Result<String, String> {
     let token: ImdsToken = ureq::get(&url)
         .set(header_name, &header_value)
         .call()
-        .map_err(|e| e.to_string())?
+        .map_err(|e| format!("token request failed: {}", e))?
         .into_json()
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("token response parse failed: {}", e))?;
+
+    // Quick sanity log — JWTs start with "eyJ" and are ~1500 chars.
+    let preview: String = token.access_token.chars().take(20).collect();
+    eprintln!(
+        "[db] fetched MI token (len={}, prefix={}...)",
+        token.access_token.len(),
+        preview
+    );
 
     Ok(token.access_token)
 }
