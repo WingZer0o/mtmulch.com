@@ -52,11 +52,17 @@
 
     </div>
   </div>
+
+  <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="bottom">
+    {{ snackbar.message }}
+  </v-snackbar>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { reactive, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { LoginRequest } from './types/login-request'
+import { RegisterRequest } from './types/register-request'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,43 +71,56 @@ const mode = computed(() => route.path === '/register' ? 'register' : 'login')
 
 const login = reactive({ email: '', password: '' })
 const register = reactive({ email: '', password: '', confirm: '' })
+const snackbar = reactive({ show: false, message: '', color: 'success' as 'success' | 'error' })
+
+function toast(message: string, color: 'success' | 'error' = 'success') {
+  snackbar.message = message
+  snackbar.color = color
+  snackbar.show = true
+}
 
 function handleLogin() {
-  let body = { email: login.email, password: login.password }
+  const body: LoginRequest = new LoginRequest(login.email, login.password)
   fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   })
-  .then(response => response.json())
-  .then(data => {
-    console.log('Login successful:', data);
-    // TODO: handle successful login
+  .then(response => {
+    if (response.ok) {
+      toast('Signed in!')
+      router.push('/')
+    } else if (response.status === 401) {
+      toast('Invalid email or password', 'error')
+    } else {
+      toast('Sign in failed', 'error')
+    }
   })
-  .catch(error => {
-    console.error('Error logging in:', error);
-    // TODO: handle login error
-  })
+  .catch(() => toast('Network error', 'error'))
 }
 
 function handleRegister() {
   if (register.password !== register.confirm) {
-    alert('Passwords do not match')
+    toast('Passwords do not match', 'error')
     return
   }
-  let body = { email: register.email, password: register.password, confirm: register.confirm }
+  const body: RegisterRequest = new RegisterRequest(register.email, register.password)
   fetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   })
-  .then(response => response.json())
-  .then(data => {
-    console.log('Registration successful:', data);
+  .then(response => {
+    if (response.ok) {
+      toast('Account created! You can now sign in.')
+      router.push('/login')
+    } else if (response.status === 409) {
+      toast('Email already registered', 'error')
+    } else {
+      toast('Registration failed', 'error')
+    }
   })
-  .catch(error => {
-    console.error('Error registering:', error);
-  })
+  .catch(() => toast('Network error', 'error'))
 }
 </script>
 
