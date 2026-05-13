@@ -1,0 +1,28 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "docker-debug-up",
+            "type": "shell",
+            "command": "docker-compose -f docker-compose.debug.yml up --build",
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Starting|Building|Pulling",
+                    "endsPattern": "Listening for connections"
+                }
+            }
+        },
+        {
+            "label": "gdbserver-attach",
+            "type": "shell",
+            "command": "docker-compose -f docker-compose.debug.yml exec -d app gdbserver --attach 0.0.0.0:1234 1 && until bash -c 'echo > /dev/tcp/localhost/1234' 2>/dev/null; do sleep 0.1; done",
+            "isBackground": false,
+            "problemMatcher": []
+        }
+    ]
+}

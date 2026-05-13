@@ -1,0 +1,62 @@
+services:
+  app:
+    build:
+      context: .
+      target: debug
+    volumes:
+      - .:/app
+      - cargo-registry:/usr/local/cargo/registry
+    ports:
+      - "8080:8080"
+      - "1234:1234"
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_PTRACE
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/rust_playground
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rust_playground
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-net
+
+  frontend:
+    image: node:24-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - app
+    networks:
+      - app-net
+
+volumes:
+  cargo-registry:
+
+networks:
+  app-net:

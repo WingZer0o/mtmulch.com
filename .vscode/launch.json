@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Rust (Docker)",
+            "type": "lldb",
+            "request": "custom",
+            "targetCreateCommands": [
+                "target create \"${workspaceFolder}/target/debug/rust-playground\""
+            ],
+            "processCreateCommands": [
+                "gdb-remote localhost:1234"
+            ],
+            "sourceMap": {
+                "/app": "${workspaceFolder}"
+            },
+            "preLaunchTask": "gdbserver-attach"
+        }
+    ]
+}
