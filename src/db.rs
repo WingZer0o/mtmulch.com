@@ -22,16 +22,34 @@ struct ImdsToken {
 }
 
 fn fetch_managed_identity_token() -> Result<String, String> {
-    let token: ImdsToken = ureq::get(
-        "http://169.254.169.254/metadata/token\
-         ?api-version=2018-02-01\
-         &resource=https://ossrdbms-auth.database.windows.net",
-    )
-    .set("Metadata", "true")
-    .call()
-    .map_err(|e| e.to_string())?
-    .into_json()
-    .map_err(|e| e.to_string())?;
+    // Container Apps injects IDENTITY_ENDPOINT + IDENTITY_HEADER; fall back to
+    // the standard IMDS address used by VMs and App Service.
+    let (url, header_name, header_value) =
+        match (std::env::var("IDENTITY_ENDPOINT"), std::env::var("IDENTITY_HEADER")) {
+            (Ok(ep), Ok(hdr)) => (
+                format!(
+                    "{}?resource=https://ossrdbms-auth.database.windows.net&api-version=2019-08-01",
+                    ep
+                ),
+                "X-IDENTITY-HEADER",
+                hdr,
+            ),
+            _ => (
+                "http://169.254.169.254/metadata/token\
+                 ?api-version=2018-02-01\
+                 &resource=https://ossrdbms-auth.database.windows.net"
+                    .to_string(),
+                "Metadata",
+                "true".to_string(),
+            ),
+        };
+
+    let token: ImdsToken = ureq::get(&url)
+        .set(header_name, &header_value)
+        .call()
+        .map_err(|e| e.to_string())?
+        .into_json()
+        .map_err(|e| e.to_string())?;
 
     Ok(token.access_token)
 }
