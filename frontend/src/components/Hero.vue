@@ -11,10 +11,27 @@
       <div class="actions">
         <a href="#projects" class="btn-primary">View my work</a>
         <a href="#contact" class="btn-ghost">Get in touch</a>
+        <button class="btn-ghost" @click="ping">Ping API</button>
       </div>
+      <p v-if="pingResponse" class="ping-response">{{ pingResponse }}</p>
     </div>
   </section>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+
+const pingResponse = ref('')
+
+async function ping() {
+  try {
+    const res = await fetch('/api/hello')
+    pingResponse.value = await res.text()
+  } catch {
+    pingResponse.value = 'Error: could not reach API'
+  }
+}
+</script>
 
 <style scoped>
 section {
@@ -83,6 +100,13 @@ h2 {
 
 .btn-ghost:hover {
   background: rgba(124, 106, 247, 0.1);
+  color: var(--accent);
+}
+
+.ping-response {
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-size: 0.875rem;
   color: var(--accent);
 }
 </style>
