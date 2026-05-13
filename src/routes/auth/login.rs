@@ -67,7 +67,7 @@ pub async fn post_login(
     let mut cookie_builder = Cookie::build("session", token)
         .http_only(true)
         .secure(is_prod)
-        .same_site(if is_prod { SameSite::Strict } else { SameSite::Lax })
+        .same_site(SameSite::None)
         .path("/")
         .max_age(Duration::hours(24));
     if let Ok(domain) = std::env::var("COOKIE_DOMAIN") {
