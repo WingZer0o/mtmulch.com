@@ -2,5 +2,10 @@
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": ["/api/*"]
+  },
+  "forwardingGateway": {
+    "allowedForwardedHosts": [
+      "mtmulch.com"
+    ]
   }
 }

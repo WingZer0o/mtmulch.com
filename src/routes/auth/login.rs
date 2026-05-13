@@ -63,13 +63,17 @@ pub async fn post_login(
         .map_err(|_| actix_web::error::ErrorInternalServerError("Token creation failed"))?
         .to_string();
 
-    let cookie = Cookie::build("session", token)
+    let is_prod = std::env::var("COOKIE_DOMAIN").is_ok();
+    let mut cookie_builder = Cookie::build("session", token)
         .http_only(true)
-        .secure(true)
-        .same_site(SameSite::Strict)
+        .secure(is_prod)
+        .same_site(if is_prod { SameSite::Strict } else { SameSite::Lax })
         .path("/")
-        .max_age(Duration::hours(24))
-        .finish();
+        .max_age(Duration::hours(24));
+    if let Ok(domain) = std::env::var("COOKIE_DOMAIN") {
+        cookie_builder = cookie_builder.domain(domain);
+    }
+    let cookie = cookie_builder.finish();
 
     Ok(HttpResponse::Ok().cookie(cookie).finish())
 }
