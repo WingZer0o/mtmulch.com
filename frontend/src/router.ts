@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from './components/Home.vue'
-import Auth from './components/Auth.vue'
+import Home from './pages/home/Home.vue'
+import Auth from './pages/auth/Auth.vue'
 
 export default createRouter({
   history: createWebHistory(),
