@@ -5,5 +5,13 @@ edition = "2024"
 
 [dependencies]
 actix-web = "4"
-diesel = { version = "2.3.9", features = ["postgres"] } 
+diesel = { version = "2.3.9", features = ["postgres", "uuid", "chrono", "r2d2"] }
 dotenvy = "0.15.7"
+paseto-v4 = "0.1.0-rc.8"
+paseto-json = "0.1.0-rc.8"
+argon2 = "0.5.3"
+uuid = { version = "1.23.1", features = ["v4"] }
+hex = "0.4.3"
+chrono = "0.4.44"
+rand = "0.8"
+serde = { version = "1.0.228", features = ["derive"] }
