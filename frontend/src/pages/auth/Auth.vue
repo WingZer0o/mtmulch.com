@@ -67,11 +67,41 @@ const login = reactive({ email: '', password: '' })
 const register = reactive({ email: '', password: '', confirm: '' })
 
 function handleLogin() {
-  // TODO: wire up login API call
+  let body = { email: login.email, password: login.password }
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Login successful:', data);
+    // TODO: handle successful login
+  })
+  .catch(error => {
+    console.error('Error logging in:', error);
+    // TODO: handle login error
+  })
 }
 
 function handleRegister() {
-  // TODO: wire up register API call
+  if (register.password !== register.confirm) {
+    alert('Passwords do not match')
+    return
+  }
+  let body = { email: register.email, password: register.password, confirm: register.confirm }
+  fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Registration successful:', data);
+  })
+  .catch(error => {
+    console.error('Error registering:', error);
+  })
 }
 </script>
 

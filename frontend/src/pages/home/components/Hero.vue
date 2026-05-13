@@ -11,9 +11,7 @@
       <div class="actions">
         <a href="#projects" class="btn-primary">View my work</a>
         <a href="#contact" class="btn-ghost">Get in touch</a>
-        <button class="btn-ghost" @click="ping">Ping API</button>
       </div>
-      <p v-if="pingResponse" class="ping-response">{{ pingResponse }}</p>
     </div>
   </section>
 </template>

@@ -1,18 +1,5 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
-
-#[get("/hello")]
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
-}
-
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    HttpResponse::Ok().body(req_body)
-}
-
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey there!")
-}
+use actix_web::{web, App, HttpServer};
+mod routes;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -20,9 +7,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(
                 web::scope("/api")
-                    .service(hello)
-                    .service(echo)
-                    .route("/hey", web::get().to(manual_hello)),
+                    .configure(routes::auth::configure)
             )
     })
     .bind(("0.0.0.0", 8080))?
