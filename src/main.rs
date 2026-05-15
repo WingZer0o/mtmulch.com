@@ -2,7 +2,9 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 
 mod db;
+mod middleware;
 mod models;
+mod paseto;
 mod routes;
 mod schema;
 

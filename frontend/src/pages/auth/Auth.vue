@@ -88,6 +88,7 @@ function handleLogin() {
   })
   .then(response => {
     if (response.ok) {
+      localStorage.setItem('logged_in', '1')
       toast('Signed in!')
       router.push('/')
     } else if (response.status === 401) {
