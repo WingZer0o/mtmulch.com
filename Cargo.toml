@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 actix-web = "4"
+actix-cors = "0.7"
 diesel = { version = "2.3.9", features = ["postgres", "uuid", "chrono", "r2d2"] }
 dotenvy = "0.15.7"
 paseto-v4 = "0.1.0-rc.8"

@@ -35,7 +35,7 @@ pub async fn post_login(
     let email = body.email.clone();
     let pool_inner = pool.clone();
 
-    let user = web::block(move || {
+    let user: User = web::block(move || {
         let mut conn = pool_inner.get().expect("db pool exhausted");
         users::table
             .filter(users::email.eq(&email))
@@ -63,11 +63,10 @@ pub async fn post_login(
         .map_err(|_| actix_web::error::ErrorInternalServerError("Token creation failed"))?
         .to_string();
 
-    let is_prod = std::env::var("COOKIE_DOMAIN").is_ok();
     let mut cookie_builder = Cookie::build("session", token)
         .http_only(true)
-        .secure(is_prod)
-        .same_site(SameSite::None)
+        .secure(true)
+        .same_site(SameSite::Lax)
         .path("/")
         .max_age(Duration::hours(24));
     if let Ok(domain) = std::env::var("COOKIE_DOMAIN") {
