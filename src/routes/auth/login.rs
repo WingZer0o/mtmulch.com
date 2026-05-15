@@ -69,9 +69,6 @@ pub async fn post_login(
         .same_site(SameSite::Lax)
         .path("/")
         .max_age(Duration::hours(24));
-    if let Ok(domain) = std::env::var("COOKIE_DOMAIN") {
-        cookie_builder = cookie_builder.domain(domain);
-    }
     let cookie = cookie_builder.finish();
 
     Ok(HttpResponse::Ok().cookie(cookie).finish())
