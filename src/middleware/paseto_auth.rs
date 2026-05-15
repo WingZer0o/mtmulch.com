@@ -7,7 +7,7 @@ use paseto_v4::EncryptedToken;
 use std::rc::Rc;
 use uuid::Uuid;
 
-use crate::paseto::local_key;
+use crate::helpers::auth::paseto::local_key;
 
 #[derive(Clone)]
 pub struct AuthUser(pub Uuid);

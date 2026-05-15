@@ -9,7 +9,7 @@ use std::time::Duration as StdDuration;
 
 use crate::db::DbPool;
 use crate::models::user_diesel::User;
-use crate::paseto::local_key;
+use crate::helpers::auth::paseto::local_key;
 use crate::schema::users;
 
 #[derive(Deserialize)]

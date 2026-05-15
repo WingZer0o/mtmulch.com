@@ -4,7 +4,7 @@ use actix_web::{web, App, HttpServer};
 mod db;
 mod middleware;
 mod models;
-mod paseto;
+mod helpers;
 mod routes;
 mod schema;
 
