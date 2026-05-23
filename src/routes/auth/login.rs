@@ -37,31 +37,23 @@ fn build_session_cookie(user_id: Uuid) -> Result<Cookie<'static>, actix_web::Err
         .map_err(|_| actix_web::error::ErrorInternalServerError("Token creation failed"))?
         .to_string();
 
-    let domain = std::env::var("COOKIE_DOMAIN").ok();
-    let builder = Cookie::build("session", token)
+    Ok(Cookie::build("session", token)
         .http_only(true)
         .secure(true)
         .same_site(SameSite::Lax)
         .path("/")
-        .max_age(Duration::hours(24));
-    Ok(match domain {
-        Some(d) => builder.domain(d).finish(),
-        None => builder.finish(),
-    })
+        .max_age(Duration::hours(24))
+        .finish())
 }
 
 fn build_is_admin_cookie(is_admin: bool) -> Cookie<'static> {
-    let domain = std::env::var("COOKIE_DOMAIN").ok();
-    let builder = Cookie::build("is_admin", if is_admin { "true" } else { "false" })
+    Cookie::build("is_admin", if is_admin { "true" } else { "false" })
         .http_only(false)
         .secure(true)
         .same_site(SameSite::Lax)
         .path("/")
-        .max_age(Duration::hours(24));
-    match domain {
-        Some(d) => builder.domain(d).finish(),
-        None => builder.finish(),
-    }
+        .max_age(Duration::hours(24))
+        .finish()
 }
 
 #[post("/login")]
