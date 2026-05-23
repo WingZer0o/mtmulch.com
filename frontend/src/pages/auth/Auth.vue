@@ -2,6 +2,11 @@
   <div class="auth-wrapper">
     <div class="auth-card">
 
+      <!-- Email verified banner -->
+      <div v-if="verifiedBanner" class="verified-banner">
+        Email verified — you can now sign in.
+      </div>
+
       <!-- Login -->
       <div v-if="view === 'login'">
         <p class="label">Welcome back</p>
@@ -90,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { LoginRequest } from './types/login-request'
 import { RegisterRequest } from './types/register-request'
@@ -99,6 +104,13 @@ const route = useRoute()
 const router = useRouter()
 
 const view = computed(() => route.path === '/register' ? 'register' : 'login')
+const verifiedBanner = ref(false)
+
+onMounted(() => {
+  if (route.query.verified === '1') {
+    verifiedBanner.value = true
+  }
+})
 
 const login = reactive({ email: '', password: '' })
 const register = reactive({ email: '', password: '', confirm: '' })
@@ -133,6 +145,7 @@ async function handleLogin() {
     })
 
     if (res.status === 401) { toast('Invalid email or password', 'error'); return }
+    if (res.status === 403) { toast('Please verify your email before signing in', 'error'); return }
     if (!res.ok) { toast('Sign in failed', 'error'); return }
 
     const data = await res.json()
@@ -195,7 +208,7 @@ function handleRegister() {
   })
     .then(response => {
       if (response.ok) {
-        toast('Account created! You can now sign in.')
+        toast('Account created! Check your email to verify your address.')
         router.push('/login')
       } else if (response.status === 409) {
         toast('Email already registered', 'error')
@@ -224,6 +237,16 @@ function handleRegister() {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2.5rem;
+}
+
+.verified-banner {
+  background: #14532d;
+  border: 1px solid #166534;
+  color: #bbf7d0;
+  border-radius: 6px;
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
 }
 
 .label {

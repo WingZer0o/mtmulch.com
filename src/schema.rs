@@ -19,6 +19,8 @@ diesel::table! {
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
         otp_enabled -> Bool,
+        is_verified -> Bool,
+        verification_public_key -> Nullable<Varchar>,
     }
 }
 

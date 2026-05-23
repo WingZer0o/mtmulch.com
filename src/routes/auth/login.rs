@@ -76,6 +76,10 @@ pub async fn post_login(
         .verify_password(password.as_bytes(), &hash)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid credentials"))?;
 
+    if !user.is_verified {
+        return Err(actix_web::error::ErrorForbidden("Email not verified"));
+    }
+
     if !user.otp_enabled {
         let cookie = build_session_cookie(user.id)?;
         return Ok(HttpResponse::Ok()
@@ -118,7 +122,7 @@ pub async fn post_login(
     .map_err(|_| actix_web::error::ErrorInternalServerError("Database error"))?;
 
     queue
-        .send(EmailJob { to: user_email, code })
+        .send(EmailJob::Otp { to: user_email, code })
         .map_err(|_| actix_web::error::ErrorInternalServerError("Email queue unavailable"))?;
 
     Ok(HttpResponse::Accepted().json(LoginResponse { otp_required: true }))

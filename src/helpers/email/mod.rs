@@ -12,9 +12,28 @@ pub fn send_otp_email(api_key: &str, to_email: &str, code: &str) -> Result<(), S
         ),
     });
 
+    resend_post(api_key, &body)
+}
+
+pub fn send_verification_email(api_key: &str, to_email: &str, link: &str) -> Result<(), String> {
+    let body = json!({
+        "from": "noreply@mtmulch.com",
+        "to": [to_email],
+        "subject": "Verify your email address",
+        "html": format!(
+            "<p>Thanks for signing up! Please verify your email address by clicking the link below.</p>\
+             <p><a href=\"{link}\">Verify my email</a></p>\
+             <p>This link expires in 24 hours. If you did not create an account, you can ignore this email.</p>"
+        ),
+    });
+
+    resend_post(api_key, &body)
+}
+
+fn resend_post(api_key: &str, body: &serde_json::Value) -> Result<(), String> {
     match ureq::post("https://api.resend.com/emails")
         .set("Authorization", &format!("Bearer {}", api_key))
-        .send_json(&body)
+        .send_json(body)
     {
         Ok(_) => Ok(()),
         Err(ureq::Error::Status(code, _)) => Err(format!("Resend returned status {}", code)),
