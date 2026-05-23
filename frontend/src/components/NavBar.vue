@@ -10,6 +10,7 @@
     <v-list nav>
       <v-list-item prepend-icon="mdi-home-outline" title="Home" @click="navigate('/')"></v-list-item>
       <template v-if="isLoggedIn">
+        <v-list-item prepend-icon="mdi-cog-outline" title="Settings" @click="navigate('/settings')"></v-list-item>
         <v-list-item prepend-icon="mdi-logout" title="Logout" @click="handleLogout"></v-list-item>
       </template>
       <template v-else>
