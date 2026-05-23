@@ -9,6 +9,12 @@ export default createRouter({
     { path: '/', component: Home },
     { path: '/login', component: Auth },
     { path: '/register', component: Auth },
-    { path: '/settings', component: Settings },
+    {
+      path: '/settings',
+      component: Settings,
+      beforeEnter: () => {
+        if (localStorage.getItem('logged_in') !== '1') return '/login'
+      },
+    },
   ]
 })
