@@ -21,4 +21,5 @@ target
 #.idea/
 postgres_data/
 frontend/node_modules/
+frontend/dist/
 .env

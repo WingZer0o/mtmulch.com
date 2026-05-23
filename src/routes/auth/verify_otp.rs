@@ -39,14 +39,14 @@ pub async fn post_verify_otp(
     let code = body.code.clone();
     let pool_inner = pool.clone();
 
-    let user_id = web::block(move || -> Result<Uuid, VerifyError> {
+    let (user_id, is_admin) = web::block(move || -> Result<(Uuid, bool), VerifyError> {
         let mut conn = pool_inner.get().expect("db pool exhausted");
         let now = Utc::now();
 
-        let user_id: Uuid = users::table
+        let (user_id, is_admin): (Uuid, bool) = users::table
             .filter(users::email.eq(&email))
-            .select(users::id)
-            .first::<Uuid>(&mut conn)
+            .select((users::id, users::is_admin))
+            .first::<(Uuid, bool)>(&mut conn)
             .map_err(|e| match e {
                 diesel::result::Error::NotFound => VerifyError::NotFound,
                 other => VerifyError::Db(other),
@@ -74,7 +74,7 @@ pub async fn post_verify_otp(
             .set(otp_codes::used.eq(true))
             .execute(&mut conn)?;
 
-        Ok(user_id)
+        Ok((user_id, is_admin))
     })
     .await
     .map_err(|_| actix_web::error::ErrorInternalServerError("Server error"))?
@@ -92,7 +92,7 @@ pub async fn post_verify_otp(
         .map_err(|_| actix_web::error::ErrorInternalServerError("Token creation failed"))?
         .to_string();
 
-    let cookie = Cookie::build("session", token)
+    let session = Cookie::build("session", token)
         .http_only(true)
         .secure(true)
         .same_site(SameSite::Lax)
@@ -100,5 +100,13 @@ pub async fn post_verify_otp(
         .max_age(Duration::hours(24))
         .finish();
 
-    Ok(HttpResponse::Ok().cookie(cookie).finish())
+    let admin_cookie = Cookie::build("is_admin", if is_admin { "true" } else { "false" })
+        .http_only(false)
+        .secure(true)
+        .same_site(SameSite::Lax)
+        .path("/")
+        .max_age(Duration::hours(24))
+        .finish();
+
+    Ok(HttpResponse::Ok().cookie(session).cookie(admin_cookie).finish())
 }
