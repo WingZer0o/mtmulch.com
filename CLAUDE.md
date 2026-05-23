@@ -7,24 +7,62 @@ Full-stack portfolio and auth application. Rust/Actix-web backend, Vue 3 fronten
 ```
 rust-playground/
 ├── src/              # Rust backend (Actix-web)
-│   ├── main.rs       # HTTP server, route definitions
-│   └── schema.rs     # Diesel-generated DB schema
+│   ├── main.rs                      # HTTP server, route/middleware wiring
+│   ├── schema.rs                    # Diesel-generated DB schema
+│   ├── db.rs                        # DB connection pool setup
+│   ├── email_queue.rs               # Background email worker (Resend API)
+│   ├── helpers/
+│   │   ├── auth/
+│   │   │   ├── mod.rs
+│   │   │   └── paseto.rs            # PASETO token generation/validation
+│   │   └── email/
+│   │       └── mod.rs               # Email sending helpers
+│   ├── middleware/
+│   │   ├── mod.rs
+│   │   └── paseto_auth.rs           # Auth middleware (validates PASETO cookie)
+│   ├── models/
+│   │   ├── mod.rs
+│   │   ├── otp_code/mod.rs          # OTP code model
+│   │   └── user_diesel/mod.rs       # User model
+│   └── routes/
+│       ├── mod.rs
+│       ├── auth/
+│       │   ├── mod.rs               # Registers /api/auth/* routes
+│       │   ├── login.rs             # POST /api/auth/login
+│       │   ├── logout.rs            # POST /api/auth/logout (auth-guarded)
+│       │   ├── register.rs          # POST /api/auth/register
+│       │   ├── verify_email.rs      # GET  /api/auth/verify-email
+│       │   └── verify_otp.rs        # POST /api/auth/verify-otp
+│       └── settings/
+│           ├── mod.rs               # Registers /api/settings/* routes
+│           ├── get_settings.rs      # GET  /api/settings
+│           └── toggle_2fa.rs        # POST /api/settings/2fa
 ├── migrations/       # Diesel SQL migrations
 ├── frontend/         # Vue 3 SPA
 │   └── src/
-│       ├── main.js         # App entry, Vuetify + Router setup
-│       ├── router.ts       # Vue Router route definitions
-│       ├── App.vue          # Root component (v-app + RouterView)
+│       ├── main.js                  # App entry, Vuetify + Router setup
+│       ├── router.ts                # Vue Router route definitions
+│       ├── api.ts                   # Axios/fetch API client
+│       ├── App.vue                  # Root component (v-app + RouterView)
 │       ├── assets/
-│       │   └── main.css    # Global CSS variables and base styles
+│       │   └── main.css            # Global CSS variables and base styles
+│       └── pages/
+│           ├── auth/
+│           │   ├── Auth.vue         # Login + Register (shared, route-driven)
+│           │   └── types/
+│           │       ├── login-request.ts
+│           │       └── register-request.ts
+│           ├── home/
+│           │   ├── Home.vue         # Portfolio page
+│           │   └── components/
+│           │       ├── Hero.vue
+│           │       ├── About.vue
+│           │       ├── Projects.vue
+│           │       └── Contact.vue
+│           └── settings/
+│               └── Settings.vue     # User settings (2FA toggle)
 │       └── components/
-│           ├── NavBar.vue   # v-app-bar + v-navigation-drawer
-│           ├── Home.vue     # Portfolio page (Hero, About, Projects, Contact)
-│           ├── Hero.vue
-│           ├── About.vue
-│           ├── Projects.vue
-│           ├── Contact.vue
-│           └── Auth.vue     # Login + Register (shared, route-driven)
+│           └── NavBar.vue           # v-app-bar + v-navigation-drawer
 ├── Dockerfile
 ├── docker-compose.local.yml
 ├── Cargo.toml
@@ -35,12 +73,30 @@ rust-playground/
 
 - **Framework**: Actix-web 4
 - **Database**: PostgreSQL via Diesel 2 (ORM + migrations)
+- **Auth**: PASETO tokens stored as HTTP-only cookies; `paseto_auth` middleware guards protected routes
+- **Email**: Background queue worker using Resend API; ed25519-dalek signs email verification tokens
+- **2FA**: TOTP OTP codes via the `otp_codes` table
 - **Port**: 8080
-- **Routes**: all under `/api` prefix
-  - `GET /api/hello`
-  - `POST /api/echo`
-  - `GET /api/hey`
-- **DB schema**: `users` table — `id` (UUID), `username`, `email`, `password_hash`, `created_at`, `updated_at`
+
+### API Routes
+
+All routes are under the `/api` prefix.
+
+| Method | Path | Auth required | Description |
+|--------|------|---------------|-------------|
+| `POST` | `/api/auth/register` | No | Create account, sends verification email |
+| `POST` | `/api/auth/login` | No | Login; returns PASETO cookie (or prompts OTP if 2FA enabled) |
+| `POST` | `/api/auth/verify-otp` | No | Submit OTP code to complete login |
+| `GET` | `/api/auth/verify-email` | No | Confirm email via token in link |
+| `POST` | `/api/auth/logout` | Yes | Clear auth cookie |
+| `GET` | `/api/settings` | Yes | Fetch user settings |
+| `POST` | `/api/settings/2fa` | Yes | Toggle 2FA on/off |
+
+### DB Schema
+
+**`users`** — `id` (UUID), `email`, `password_hash`, `created_at`, `updated_at`, `otp_enabled` (bool), `is_verified` (bool), `verification_public_key` (nullable)
+
+**`otp_codes`** — `id` (UUID), `user_id` (UUID → users), `code`, `expires_at`, `used` (bool), `created_at`
 
 ### Running the backend
 ```bash
@@ -62,11 +118,13 @@ diesel migration revert
 - **Node manager**: Volta
 
 ### Routes
-| Path | Component |
-|------|-----------|
-| `/` | `Home.vue` |
-| `/login` | `Auth.vue` |
-| `/register` | `Auth.vue` |
+
+| Path | Component | Guard |
+|------|-----------|-------|
+| `/` | `pages/home/Home.vue` | None |
+| `/login` | `pages/auth/Auth.vue` | None |
+| `/register` | `pages/auth/Auth.vue` | None |
+| `/settings` | `pages/settings/Settings.vue` | `localStorage.logged_in === '1'` → redirect `/login` |
 
 ### Auth.vue pattern
 `Auth.vue` is shared between `/login` and `/register`. Mode is derived from `useRoute()` — no props needed. Toggle buttons inside the form use `router.push()` to keep the URL in sync.
