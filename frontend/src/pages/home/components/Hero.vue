@@ -2,7 +2,7 @@
   <section id="hero">
     <div class="container">
       <p class="greeting">Hi, my name is</p>
-      <h1>Mike Mulchrone.</h1>
+      <h1 class="typewriter" style="--tw-chars: 15">Mike Mulchrone.</h1>
       <h2>I build fast, reliable software.</h2>
       <p class="bio">
         I'm a software engineer specialising in systems programming and web development,
@@ -17,18 +17,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
-const pingResponse = ref('')
-
-async function ping() {
-  try {
-    const res = await fetch('/api/hello')
-    pingResponse.value = await res.text()
-  } catch {
-    pingResponse.value = 'Error: could not reach API'
-  }
-}
 </script>
 
 <style scoped>
