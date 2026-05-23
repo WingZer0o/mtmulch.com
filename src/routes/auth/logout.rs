@@ -9,11 +9,10 @@ fn removal_cookie(name: &'static str, http_only: bool) -> Cookie<'static> {
         .same_site(SameSite::Lax)
         .path("/")
         .max_age(Duration::ZERO);
-    let mut cookie = match domain {
+    let cookie = match domain {
         Some(d) => builder.domain(d).finish(),
         None => builder.finish(),
     };
-    cookie.make_removal();
     cookie
 }
 
