@@ -2,7 +2,7 @@
   <div class="admin-shell">
     <!-- Sidebar -->
     <aside class="admin-sidebar">
-      <div class="sidebar-top" style="margin-top: 75px">
+      <div class="sidebar-top">
         <span class="sidebar-title">Blog CMS</span>
         <v-btn class="btn-new" @click="newPost">+ New</v-btn>
       </div>
@@ -584,7 +584,7 @@ loadPosts()
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: gray;
+  background: rgb(11, 10, 10);
 }
 
 .quill-mount {
