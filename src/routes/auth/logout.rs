@@ -21,5 +21,8 @@ pub async fn post_logout() -> HttpResponse {
         .finish();
     is_admin.make_removal();
 
-    HttpResponse::Ok().cookie(session).cookie(is_admin).finish()
+    HttpResponse::Ok()
+        .cookie(session)
+        .cookie(is_admin)
+        .finish()
 }

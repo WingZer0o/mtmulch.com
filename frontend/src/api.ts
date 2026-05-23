@@ -1,16 +1,17 @@
 import router from './router'
 
 export async function apiFetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
-  const res = init ? await fetch(input, init) : await fetch(input);
+  const res = await fetch(input, { credentials: 'include', ...init });
   if (res.status === 401) {
-    await unauthorizedHandler(res);
+    await unauthorizedHandler();
+    throw new Error('Unauthorized');
   }
   return res;
 }
 
 
-const unauthorizedHandler = async (res: Response) => {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+const unauthorizedHandler = async () => {
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
   localStorage.removeItem('logged_in');
   router.push('/login');
 }

@@ -17,7 +17,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(verify_email::get_verify_email)
             .service(
                 web::scope("")
-                    .wrap(PasetoAuth)
                     .service(logout::post_logout),
             ),
     );
