@@ -64,10 +64,16 @@ pub async fn post_login(
             .first::<User>(&mut conn)
     })
     .await
-    .map_err(|_| actix_web::error::ErrorInternalServerError("Server error"))?
-    .map_err(|e| match e {
-        diesel::result::Error::NotFound => actix_web::error::ErrorUnauthorized("Invalid credentials"),
-        _ => actix_web::error::ErrorInternalServerError("Database error"),
+    .map_err(|e| {
+        eprintln!("[login/select] blocking error: {e:?}");
+        actix_web::error::ErrorInternalServerError("Server error")
+    })?
+    .map_err(|e| {
+        eprintln!("[login/select] database error: {e:?}");
+        match e {
+            diesel::result::Error::NotFound => actix_web::error::ErrorUnauthorized("Invalid credentials"),
+            _ => actix_web::error::ErrorInternalServerError("Database error"),
+        }
     })?;
 
     let hash = PasswordHash::new(&user.password_hash)
@@ -114,8 +120,14 @@ pub async fn post_login(
         Ok::<String, diesel::result::Error>(code)
     })
     .await
-    .map_err(|_| actix_web::error::ErrorInternalServerError("Server error"))?
-    .map_err(|_| actix_web::error::ErrorInternalServerError("Database error"))?;
+    .map_err(|e| {
+        eprintln!("[login/otp] blocking error: {e:?}");
+        actix_web::error::ErrorInternalServerError("Server error")
+    })?
+    .map_err(|e| {
+        eprintln!("[login/otp] database error: {e:?}");
+        actix_web::error::ErrorInternalServerError("Database error")
+    })?;
 
     queue
         .send(EmailJob { to: user_email, code })
