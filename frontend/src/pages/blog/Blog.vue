@@ -56,7 +56,7 @@ function formatDate(iso) {
 
 <style scoped>
 .blog-container {
-  padding-top: 2rem;
+  padding-top: 5rem;
   padding-bottom: 4rem;
 }
 

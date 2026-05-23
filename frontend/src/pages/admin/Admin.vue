@@ -69,7 +69,7 @@
         </div>
 
         <div class="editor-body">
-          <div ref="editorEl" class="stacks-editor-mount"></div>
+          <div ref="editorEl" class="quill-mount"></div>
         </div>
 
         <div class="editor-footer">
@@ -98,8 +98,8 @@
 
 <script setup>
 import { ref, nextTick, onBeforeUnmount } from 'vue'
-import { StacksEditor } from '@stackoverflow/stacks-editor'
-import '@stackoverflow/stacks-editor/dist/styles.css'
+import Quill from 'quill'
+import 'quill/dist/quill.snow.css'
 import { apiFetch } from '../../api'
 
 const posts = ref([])
@@ -128,7 +128,6 @@ async function loadPosts() {
 }
 
 function destroyEditor() {
-  editorInstance?.destroy?.()
   editorInstance = null
   if (editorEl.value) editorEl.value.innerHTML = ''
 }
@@ -137,9 +136,22 @@ async function mountEditor(initialContent = '') {
   await nextTick()
   if (!editorEl.value) return
   destroyEditor()
-  editorInstance = new StacksEditor(editorEl.value, initialContent, {
-    editorHelpLink: '',
+  editorInstance = new Quill(editorEl.value, {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link'],
+        ['clean'],
+      ],
+    },
   })
+  if (initialContent) {
+    editorInstance.clipboard.dangerouslyPasteHTML(initialContent)
+  }
 }
 
 function newPost() {
@@ -160,7 +172,7 @@ async function save() {
   saveError.value = null;
   saveSuccess.value = false;
   saving.value = true;
-  const content = editorInstance?.content ?? '';
+  const content = editorInstance?.root.innerHTML ?? '';
 
   try {
     const body = { ...form.value, content }
@@ -218,243 +230,100 @@ onBeforeUnmount(destroyEditor)
 loadPosts()
 </script>
 
-<!-- Global overrides: Stacks Editor dark theme -->
+<!-- Global overrides: Quill dark theme -->
 <style>
-/* ── Popover fix ─────────────────────────────────────────────── */
-.s-popover {
-  display: none !important;
-  position: absolute;
-  z-index: 1050;
-}
-.s-popover.is-visible {
-  display: block !important;
-}
-
-/* ── Design tokens ───────────────────────────────────────────── */
-.stacks-editor-mount {
-  --black-500: #8892a4;
-  --black-600: #c8d3e8;
-  --black-150: #2a2d3e;
-  --white: #1a1d27;
-  --br-sm: 5px;
-  --su2: 2px;
-  --su12: 12px;
-  --su4: 4px;
-  --theme-secondary-200: rgba(124,106,247,0.18);
-  --theme-secondary-400: #7c6af7;
-  --theme-secondary-600: #9585f8;
-  --focus-neutral: rgba(0,0,0,.2);
-  --focus-theme: rgba(124,106,247,.4);
-  --fc-light: #5a6478;
-  --s-prose-spacing: 1.1rem;
-  --s-prose-spacing-condensed: 0.6rem;
-  --s-step: 40px;
-}
-
-/* ── Container ───────────────────────────────────────────────── */
-.stacks-editor-mount .s-editor-container {
-  border: none;
-  background: transparent;
-}
-
 /* ── Toolbar ─────────────────────────────────────────────────── */
-.stacks-editor-mount .s-editor-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1px;
-  padding: 6px 12px;
+.quill-mount .ql-toolbar.ql-snow {
   background: #13151f;
-  border-bottom: 1px solid #23263a;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-/* Toolbar buttons */
-.stacks-editor-mount .s-btn.s-editor-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 6px;
-  color: #5a6880;
-  background: transparent;
   border: none;
-  border-radius: 5px;
-  transition: color 0.12s, background 0.12s;
+  border-bottom: 1px solid #2a2d3e;
+  flex-shrink: 0;
 }
 
-.stacks-editor-mount .s-btn.s-editor-btn:hover {
-  color: #c8d3e8 !important;
-  background: #1e2234 !important;
+.quill-mount .ql-toolbar.ql-snow .ql-stroke { stroke: #8892a4; }
+.quill-mount .ql-toolbar.ql-snow .ql-fill   { fill:   #8892a4; }
+.quill-mount .ql-toolbar.ql-snow .ql-picker  { color:  #8892a4; }
+
+.quill-mount .ql-toolbar.ql-snow button:hover .ql-stroke,
+.quill-mount .ql-toolbar.ql-snow button.ql-active .ql-stroke { stroke: #7c6af7; }
+.quill-mount .ql-toolbar.ql-snow button:hover .ql-fill,
+.quill-mount .ql-toolbar.ql-snow button.ql-active .ql-fill   { fill:   #7c6af7; }
+
+.quill-mount .ql-toolbar.ql-snow .ql-picker-label:hover,
+.quill-mount .ql-toolbar.ql-snow .ql-picker-label.ql-active  { color:  #7c6af7; }
+.quill-mount .ql-toolbar.ql-snow .ql-picker-label:hover .ql-stroke,
+.quill-mount .ql-toolbar.ql-snow .ql-picker-label.ql-active .ql-stroke { stroke: #7c6af7; }
+
+.quill-mount .ql-toolbar.ql-snow .ql-picker-options {
+  background: #1a1d27;
+  border-color: #2a2d3e;
+}
+.quill-mount .ql-toolbar.ql-snow .ql-picker-item { color: #8892a4; }
+.quill-mount .ql-toolbar.ql-snow .ql-picker-item:hover,
+.quill-mount .ql-toolbar.ql-snow .ql-picker-item.ql-selected { color: #7c6af7; }
+
+/* ── Container + editor area ─────────────────────────────────── */
+.quill-mount .ql-container.ql-snow {
+  border: none;
+  background: #0f1117;
+  flex: 1;
+  overflow-y: auto;
+  font-family: inherit;
+  font-size: 15.5px;
 }
 
-.stacks-editor-mount .s-btn.s-editor-btn.is-selected,
-.stacks-editor-mount .s-btn.s-editor-btn:active {
-  color: #9585f8 !important;
-  background: rgba(124, 106, 247, 0.15) !important;
-}
-
-/* SVG icons */
-.stacks-editor-mount .svg-icon-bg {
-  width: 16px;
-  height: 16px;
-  opacity: 0.75;
-  transition: opacity 0.12s;
-}
-.stacks-editor-mount .s-btn.s-editor-btn:hover .svg-icon-bg {
-  opacity: 1;
-}
-
-/* Dropdown/btn-group caret */
-.stacks-editor-mount .s-btn.s-editor-btn.s-btn__dropdown::after {
-  border-top-color: currentColor;
-}
-
-/* Toolbar button groups — subtle separator */
-.stacks-editor-mount .s-btn-group {
-  display: inline-flex;
-  gap: 1px;
-  padding: 0 4px;
-  border-right: 1px solid #23263a;
-  margin-right: 2px;
-}
-.stacks-editor-mount .s-btn-group:last-child {
-  border-right: none;
-}
-
-/* ── Mode toggle (Rich text / Markdown) ──────────────────────── */
-.stacks-editor-mount .s-editor--mode-toggle-container,
-.stacks-editor-mount [class*="mode-toggle"] {
-  margin-left: auto;
-}
-
-/* Radio-style mode buttons */
-.stacks-editor-mount .s-btn-group .s-btn--radio:checked + .s-editor-btn {
-  background: rgba(124, 106, 247, 0.2) !important;
-  color: #9585f8 !important;
-}
-
-/* ── Writing area ────────────────────────────────────────────── */
-.stacks-editor-mount .ProseMirror {
+.quill-mount .ql-editor {
   max-width: 760px;
   margin: 0 auto;
   padding: 32px 40px;
-  min-height: 100%;
-  color: #c8d3e8;
-  font-size: 15.5px;
+  color: #e2e8f0;
   line-height: 1.85;
-  outline: none;
   caret-color: #7c6af7;
+  min-height: 400px;
 }
 
-/* Placeholder */
-.stacks-editor-mount .ProseMirror [data-placeholder]::before {
+.quill-mount .ql-editor.ql-blank::before {
   color: #2e3448;
+  font-style: italic;
+  left: calc(50% - 380px + 40px);
+}
+
+/* ── Content styles ──────────────────────────────────────────── */
+.quill-mount .ql-editor h1,
+.quill-mount .ql-editor h2,
+.quill-mount .ql-editor h3 { color: #e2e8f0; }
+
+.quill-mount .ql-editor blockquote {
+  border-left: 3px solid #7c6af7;
+  color: #6a7590;
+  padding-left: 16px;
   font-style: italic;
 }
 
-/* Headings */
-.stacks-editor-mount .ProseMirror h1,
-.stacks-editor-mount .ProseMirror h2,
-.stacks-editor-mount .ProseMirror h3 {
-  color: #e2e8f0;
-  margin-top: 1.6em;
-  margin-bottom: 0.4em;
-  line-height: 1.3;
-}
-.stacks-editor-mount .ProseMirror h1 { font-size: 1.75em; }
-.stacks-editor-mount .ProseMirror h2 { font-size: 1.35em; }
-.stacks-editor-mount .ProseMirror h3 { font-size: 1.1em;  }
-
-/* Paragraphs */
-.stacks-editor-mount .ProseMirror p {
-  margin-bottom: 1em;
-}
-
-/* Inline code */
-.stacks-editor-mount .ProseMirror code {
-  background: #1a1d2e;
+.quill-mount .ql-editor code,
+.quill-mount .ql-editor pre {
+  background: #1a1d27;
   border: 1px solid #2a2d3e;
-  border-radius: 4px;
-  padding: 0.1em 0.45em;
-  font-size: 0.875em;
   color: #9585f8;
-  font-family: var(--mono);
+  border-radius: 4px;
 }
 
-/* Code blocks */
-.stacks-editor-mount .ProseMirror pre {
+.quill-mount .ql-editor pre.ql-syntax {
   background: #111320;
-  border: 1px solid #23263a;
+  border-color: #23263a;
+  color: #a8b3cf;
   border-radius: 8px;
   padding: 16px 20px;
   margin: 1.2em 0;
   overflow-x: auto;
 }
-.stacks-editor-mount .ProseMirror pre code {
-  background: none;
-  border: none;
-  padding: 0;
-  color: #a8b3cf;
-  font-size: 0.9em;
-}
 
-/* Blockquote */
-.stacks-editor-mount .ProseMirror blockquote {
-  border-left: 3px solid #7c6af7;
-  margin: 1.2em 0;
-  padding: 4px 0 4px 16px;
-  color: #6a7590;
-  font-style: italic;
-}
+.quill-mount .ql-editor a { color: #7c6af7; }
 
-/* Lists */
-.stacks-editor-mount .ProseMirror ul,
-.stacks-editor-mount .ProseMirror ol {
-  padding-left: 1.5em;
-  margin-bottom: 1em;
-}
-.stacks-editor-mount .ProseMirror li {
-  margin-bottom: 0.3em;
-}
+.quill-mount .ql-editor ::selection { background: rgba(124, 106, 247, 0.25); }
 
-/* Links */
-.stacks-editor-mount .ProseMirror a {
-  color: #7c6af7;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
 
-/* Horizontal rule */
-.stacks-editor-mount .ProseMirror hr {
-  border: none;
-  border-top: 1px solid #23263a;
-  margin: 2em 0;
-}
 
-/* Selection */
-.stacks-editor-mount .ProseMirror ::selection {
-  background: rgba(124, 106, 247, 0.25);
-}
-
-/* ── Dropdown menus ──────────────────────────────────────────── */
-.stacks-editor-mount .s-editor--dropdown-item {
-  color: #c8d3e8;
-  padding: 7px 16px;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-.stacks-editor-mount .s-editor--dropdown-item:hover {
-  background: #1e2234;
-  color: #e2e8f0;
-}
-.stacks-editor-mount .s-editor--dropdown-item.is-selected {
-  color: #9585f8;
-  background: rgba(124, 106, 247, 0.12);
-}
 </style>
 
 <style scoped>
@@ -464,6 +333,7 @@ loadPosts()
   height: calc(100vh - 64px);
   overflow: hidden;
   background: #0f1117;
+  padding-top: 64px;
 }
 
 /* ── Sidebar ─────────────────────────────────────────── */
@@ -711,12 +581,17 @@ loadPosts()
 /* Editor body */
 .editor-body {
   flex: 1;
-  overflow-y: auto;
-  background: #0f1117;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: gray;
 }
 
-.stacks-editor-mount {
-  height: 100%;
+.quill-mount {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* Editor footer */

@@ -10,25 +10,20 @@
       <p class="back-link" @click="router.push('/blog')">← Back to blog</p>
       <h1 class="post-title">{{ post.title }}</h1>
       <p class="post-date">{{ formatDate(post.created_at) }}</p>
-      <div class="post-content" v-html="renderedContent"></div>
+      <div class="post-content" v-html="post.content"></div>
     </article>
   </v-container>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { marked } from 'marked'
 
 const route = useRoute()
 const router = useRouter()
 const post = ref(null)
 const loading = ref(true)
 const error = ref(null)
-
-const renderedContent = computed(() =>
-  post.value ? marked.parse(post.value.content) : ''
-)
 
 onMounted(async () => {
   try {
