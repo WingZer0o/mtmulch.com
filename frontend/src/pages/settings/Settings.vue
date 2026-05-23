@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { apiFetch } from '../../api'
 
 const email = ref('')
 const otpEnabled = ref(false)
@@ -54,8 +55,8 @@ function toast(message: string, color: 'success' | 'error' = 'success') {
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/settings', { credentials: 'include' })
-    if (res.status === 401) { fetchError.value = 'You must be logged in to view settings.'; return }
+    const res = await apiFetch('/api/settings', { credentials: 'include' })
+    if (res.status === 401) return
     if (!res.ok) throw new Error()
     const data = await res.json()
     email.value = data.email
@@ -71,7 +72,7 @@ async function handleToggle() {
   const newEnabled = !otpEnabled.value
   saving.value = true
   try {
-    const res = await fetch('/api/settings/2fa', {
+    const res = await apiFetch('/api/settings/2fa', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
