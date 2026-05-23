@@ -11,15 +11,15 @@
     <div v-else-if="posts.length === 0" class="empty-msg">No posts yet.</div>
 
     <div v-else class="posts-list">
-      <div
-        v-for="post in posts"
+      <v-row v-for="post in posts"
         :key="post.id"
         class="post-card"
-        @click="router.push(`/blog/${post.slug}`)"
-      >
-        <h2 class="post-title">{{ post.title }}</h2>
-        <p class="post-date">{{ formatDate(post.created_at) }}</p>
-      </div>
+        @click="router.push(`/blog/${post.slug}`)">
+        <v-col col="4">
+          <h2 class="post-title">{{ post.title }}</h2>
+          <p class="post-date">{{ formatDate(post.created_at) }}</p>
+        </v-col>
+      </v-row>
     </div>
   </v-container>
 </template>
