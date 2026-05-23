@@ -46,6 +46,16 @@ fn build_session_cookie(user_id: Uuid) -> Result<Cookie<'static>, actix_web::Err
         .finish())
 }
 
+fn build_is_admin_cookie(is_admin: bool) -> Cookie<'static> {
+    Cookie::build("is_admin", if is_admin { "true" } else { "false" })
+        .http_only(false)
+        .secure(true)
+        .same_site(SameSite::Lax)
+        .path("/")
+        .max_age(Duration::hours(24))
+        .finish()
+}
+
 #[post("/login")]
 pub async fn post_login(
     pool: web::Data<DbPool>,
@@ -81,9 +91,11 @@ pub async fn post_login(
     }
 
     if !user.otp_enabled {
-        let cookie = build_session_cookie(user.id)?;
+        let session = build_session_cookie(user.id)?;
+        let is_admin = build_is_admin_cookie(user.is_admin);
         return Ok(HttpResponse::Ok()
-            .cookie(cookie)
+            .cookie(session)
+            .cookie(is_admin)
             .json(LoginResponse { otp_required: false }));
     }
 

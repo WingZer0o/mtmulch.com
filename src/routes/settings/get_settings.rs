@@ -12,7 +12,7 @@ struct SettingsResponse {
     otp_enabled: bool,
 }
 
-#[get("/settings")]
+#[get("")]
 pub async fn get_settings(
     pool: web::Data<DbPool>,
     req: HttpRequest,

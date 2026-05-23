@@ -11,7 +11,7 @@ struct Toggle2faRequest {
     enabled: bool,
 }
 
-#[post("/settings/2fa")]
+#[post("/2fa")]
 pub async fn toggle_2fa(
     pool: web::Data<DbPool>,
     body: web::Json<Toggle2faRequest>,

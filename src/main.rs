@@ -38,7 +38,9 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .configure(routes::auth::configure)
-                    .configure(routes::settings::configure),
+                    .configure(routes::settings::configure)
+                    .configure(routes::blog::configure)
+                    .configure(routes::admin::configure),
             )
     })
     .bind(("0.0.0.0", 8080))?

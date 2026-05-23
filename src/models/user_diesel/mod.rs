@@ -13,6 +13,7 @@ pub struct User {
     pub otp_enabled: bool,
     pub is_verified: bool,
     pub verification_public_key: Option<String>,
+    pub is_admin: bool,
 }
 
 #[derive(Insertable)]
