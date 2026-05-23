@@ -2,9 +2,10 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 
 mod db;
+mod email_queue;
+mod helpers;
 mod middleware;
 mod models;
-mod helpers;
 mod routes;
 mod schema;
 
@@ -13,7 +14,10 @@ async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let resend_api_key = std::env::var("RESEND_API_KEY").expect("RESEND_API_KEY must be set");
+
     let pool = db::create_pool(&database_url);
+    let queue = email_queue::start_worker(resend_api_key);
 
     HttpServer::new(move || {
         let cors = Cors::default()
@@ -30,9 +34,11 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(queue.clone()))
             .service(
                 web::scope("/api")
                     .configure(routes::auth::configure)
+                    .configure(routes::settings::configure),
             )
     })
     .bind(("0.0.0.0", 8080))?

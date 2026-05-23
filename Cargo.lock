@@ -1611,6 +1611,7 @@ dependencies = [
  "paseto-v4",
  "rand 0.8.6",
  "serde",
+ "serde_json",
  "ureq",
  "url",
  "uuid",
