@@ -92,21 +92,33 @@ pub async fn post_verify_otp(
         .map_err(|_| actix_web::error::ErrorInternalServerError("Token creation failed"))?
         .to_string();
 
-    let session = Cookie::build("session", token)
-        .http_only(true)
-        .secure(true)
-        .same_site(SameSite::Lax)
-        .path("/")
-        .max_age(Duration::hours(24))
-        .finish();
+    let domain = std::env::var("COOKIE_DOMAIN").ok();
 
-    let admin_cookie = Cookie::build("is_admin", if is_admin { "true" } else { "false" })
-        .http_only(false)
-        .secure(true)
-        .same_site(SameSite::Lax)
-        .path("/")
-        .max_age(Duration::hours(24))
-        .finish();
+    let session = {
+        let b = Cookie::build("session", token)
+            .http_only(true)
+            .secure(true)
+            .same_site(SameSite::Lax)
+            .path("/")
+            .max_age(Duration::hours(24));
+        match domain.clone() {
+            Some(d) => b.domain(d).finish(),
+            None => b.finish(),
+        }
+    };
+
+    let admin_cookie = {
+        let b = Cookie::build("is_admin", if is_admin { "true" } else { "false" })
+            .http_only(false)
+            .secure(true)
+            .same_site(SameSite::Lax)
+            .path("/")
+            .max_age(Duration::hours(24));
+        match domain {
+            Some(d) => b.domain(d).finish(),
+            None => b.finish(),
+        }
+    };
 
     Ok(HttpResponse::Ok().cookie(session).cookie(admin_cookie).finish())
 }
