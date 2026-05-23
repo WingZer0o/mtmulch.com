@@ -11,12 +11,14 @@
       <div class="actions">
         <a href="#projects" class="btn-primary">View my work</a>
         <a href="#contact" class="btn-ghost">Get in touch</a>
+        <RouterLink to="/blog" class="btn-ghost">Read my blog</RouterLink>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
+import { RouterLink } from 'vue-router'
 </script>
 
 <style scoped>
