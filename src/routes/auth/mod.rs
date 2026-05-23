@@ -1,7 +1,5 @@
 use actix_web::web;
 
-use crate::middleware::PasetoAuth;
-
 pub mod login;
 pub mod logout;
 pub mod register;
