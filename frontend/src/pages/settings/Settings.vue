@@ -34,7 +34,7 @@
   </div>
 
   <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="bottom">
-    {{ snackbar.message }}
+    <div class="text-center w-100">{{ snackbar.message }}</div>
   </v-snackbar>
 </template>
 
