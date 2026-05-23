@@ -92,8 +92,6 @@ pub async fn post_verify_otp(
         .map_err(|_| actix_web::error::ErrorInternalServerError("Token creation failed"))?
         .to_string();
 
-    let domain = std::env::var("COOKIE_DOMAIN").ok();
-
     let session = {
         let b = Cookie::build("session", token)
             .http_only(true)
@@ -101,10 +99,7 @@ pub async fn post_verify_otp(
             .same_site(SameSite::Lax)
             .path("/")
             .max_age(Duration::hours(24));
-        match domain.clone() {
-            Some(d) => b.domain(d).finish(),
-            None => b.finish(),
-        }
+        b.finish()
     };
 
     let admin_cookie = {
@@ -114,10 +109,7 @@ pub async fn post_verify_otp(
             .same_site(SameSite::Lax)
             .path("/")
             .max_age(Duration::hours(24));
-        match domain {
-            Some(d) => b.domain(d).finish(),
-            None => b.finish(),
-        }
+        b.finish()
     };
 
     Ok(HttpResponse::Ok().cookie(session).cookie(admin_cookie).finish())
