@@ -15,9 +15,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(register::post_register)
             .service(verify_otp::post_verify_otp)
             .service(verify_email::get_verify_email)
-            .service(
-                web::scope("")
-                    .service(logout::post_logout),
-            ),
+            .service(logout::post_logout)
     );
 }
