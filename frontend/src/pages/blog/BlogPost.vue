@@ -35,24 +35,23 @@
           </div>
         </div>
 
-        <v-textarea
-          v-model="newComment"
-          rows="5"
-          placeholder="Write a comment..."
-          :disabled="submitting"
-          hide-details
-          class="comment-textarea"
-          clearable 
-        />
         <div v-if="isLoggedIn" class="comment-form">
           <h3 class="form-heading">Leave a comment</h3>
+          <v-textarea
+            v-model="newComment"
+            rows="5"
+            placeholder="Write a comment..."
+            :disabled="submitting"
+            hide-details
+            class="comment-textarea"
+          />
           <div class="form-actions">
             <v-btn
               @click="submitComment"
               :loading="submitting"
               :disabled="!newComment.trim()"
               variant="flat"
-              class="submit-btn"
+              class="primary-btn"
             >
               Post Comment
             </v-btn>
@@ -313,24 +312,11 @@ function maskEmail(email) {
   font-weight: 500;
 }
 
-.comment-textarea {
-  margin-bottom: 0.75rem;
-}
+
 
 .comment-textarea :deep(.v-field__input) {
-  background-color: var(--bg-card);
-  color: var(--text);
+  mask-image: none;
 }
-
-.comment-textarea :deep(.v-field__overlay) {
-  background-color: transparent;
-}
-
-.comment-textarea :deep(.v-field--focused .v-field__outline) {
-  --v-field-border-opacity: 1;
-  color: var(--accent);
-}
-
 
 .form-actions {
   display: flex;
@@ -347,10 +333,6 @@ function maskEmail(email) {
 
 .submit-btn:hover {
   background-color: var(--accent-hover) !important;
-}
-
-.comment-textarea :deep(.v-field__outline) {
-  color: var(--border);
 }
 
 .submit-error {
