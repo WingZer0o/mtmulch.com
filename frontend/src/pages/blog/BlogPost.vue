@@ -43,15 +43,15 @@
             placeholder="Write a comment..."
             :disabled="submitting"
             hide-details
+            clearable
             class="comment-textarea"
           />
           <div class="form-actions">
             <v-btn
+              variant="outlined"
               @click="submitComment"
               :loading="submitting"
               :disabled="!newComment.trim()"
-              variant="flat"
-              class="primary-btn"
             >
               Post Comment
             </v-btn>
@@ -312,7 +312,9 @@ function maskEmail(email) {
   font-weight: 500;
 }
 
-
+.comment-textarea {
+  padding-bottom: 0.5rem;
+}
 
 .comment-textarea :deep(.v-field__input) {
   mask-image: none;

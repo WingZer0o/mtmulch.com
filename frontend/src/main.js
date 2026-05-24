@@ -18,6 +18,12 @@ import '@fontsource/roboto/700.css'
 
 const vuetify = createVuetify({
   components: { VApp, VRow, VTextarea, VAppBar, VAppBarNavIcon, VAppBarTitle, VList, VListItem, VNavigationDrawer, VSnackbar, VDialog, VOtpInput, VBtn, VProgressCircular, VContainer, VTextField, VSwitch, VSpacer },
+  defaults: {
+    VBtn: {
+      color: 'primary',
+      variant: 'flat',
+    },
+  },
   icons: {
     defaultSet: 'mdi',
     aliases,
