@@ -7,36 +7,40 @@ Full-stack portfolio and auth application. Rust/Actix-web backend, Vue 3 fronten
 ```
 rust-playground/
 ├── src/              # Rust backend (Actix-web)
-│   ├── main.rs                      # HTTP server, route/middleware wiring
-│   ├── schema.rs                    # Diesel-generated DB schema
-│   ├── db.rs                        # DB connection pool setup
-│   ├── email_queue.rs               # Background email worker (Resend API)
+│   ├── main.rs                          # HTTP server, route/middleware wiring
+│   ├── schema.rs                        # Diesel-generated DB schema
+│   ├── db.rs                            # DB connection pool setup
+│   ├── email_queue.rs                   # Background email worker (Resend API)
 │   ├── helpers/
 │   │   ├── auth/
 │   │   │   ├── mod.rs
-│   │   │   └── paseto.rs            # PASETO token generation/validation
+│   │   │   └── paseto.rs                # PASETO token generation/validation
 │   │   └── email/
-│   │       └── mod.rs               # Email sending helpers
+│   │       └── mod.rs                   # Email sending helpers
 │   ├── middleware/
 │   │   ├── mod.rs
-│   │   └── paseto_auth.rs           # Auth middleware (validates PASETO cookie)
+│   │   └── paseto_auth.rs               # Auth middleware (validates PASETO cookie)
 │   ├── models/
 │   │   ├── mod.rs
-│   │   ├── otp_code/mod.rs          # OTP code model
-│   │   └── user_diesel/mod.rs       # User model
+│   │   ├── failed_login_attempt/mod.rs  # Failed login attempt model
+│   │   ├── otp_code/mod.rs              # OTP code model
+│   │   ├── password_history/mod.rs      # Password history model (last 5 hashes)
+│   │   └── user_diesel/mod.rs           # User model
 │   └── routes/
 │       ├── mod.rs
 │       ├── auth/
-│       │   ├── mod.rs               # Registers /api/auth/* routes
-│       │   ├── login.rs             # POST /api/auth/login
-│       │   ├── logout.rs            # POST /api/auth/logout (auth-guarded)
-│       │   ├── register.rs          # POST /api/auth/register
-│       │   ├── verify_email.rs      # GET  /api/auth/verify-email
-│       │   └── verify_otp.rs        # POST /api/auth/verify-otp
+│       │   ├── mod.rs                   # Registers /api/auth/* routes
+│       │   ├── login.rs                 # POST /api/auth/login
+│       │   ├── logout.rs                # POST /api/auth/logout (auth-guarded)
+│       │   ├── register.rs              # POST /api/auth/register
+│       │   ├── unlock_account.rs        # GET  /api/auth/unlock-account
+│       │   ├── verify_email.rs          # GET  /api/auth/verify-email
+│       │   └── verify_otp.rs            # POST /api/auth/verify-otp
 │       └── settings/
-│           ├── mod.rs               # Registers /api/settings/* routes
-│           ├── get_settings.rs      # GET  /api/settings
-│           └── toggle_2fa.rs        # POST /api/settings/2fa
+│           ├── mod.rs                   # Registers /api/settings/* routes
+│           ├── change_password.rs       # POST /api/settings/change-password (auth-guarded)
+│           ├── get_settings.rs          # GET  /api/settings
+│           └── toggle_2fa.rs            # POST /api/settings/2fa
 ├── migrations/       # Diesel SQL migrations
 ├── frontend/         # Vue 3 SPA
 │   └── src/
@@ -60,7 +64,7 @@ rust-playground/
 │           │       ├── Projects.vue
 │           │       └── Contact.vue
 │           └── settings/
-│               └── Settings.vue     # User settings (2FA toggle)
+│               └── Settings.vue     # User settings (2FA toggle, change password)
 │       └── components/
 │           └── NavBar.vue           # v-app-bar + v-navigation-drawer
 ├── Dockerfile
@@ -74,7 +78,7 @@ rust-playground/
 - **Framework**: Actix-web 4
 - **Database**: PostgreSQL via Diesel 2 (ORM + migrations)
 - **Auth**: PASETO tokens stored as HTTP-only cookies; `paseto_auth` middleware guards protected routes
-- **Email**: Background queue worker using Resend API; ed25519-dalek signs email verification tokens
+- **Email**: Background queue worker using Resend API; ed25519-dalek signs email verification and unlock tokens
 - **2FA**: TOTP OTP codes via the `otp_codes` table
 - **Port**: 8080
 
@@ -85,18 +89,31 @@ All routes are under the `/api` prefix.
 | Method | Path | Auth required | Description |
 |--------|------|---------------|-------------|
 | `POST` | `/api/auth/register` | No | Create account, sends verification email |
-| `POST` | `/api/auth/login` | No | Login; returns PASETO cookie (or prompts OTP if 2FA enabled) |
+| `POST` | `/api/auth/login` | No | Login; returns PASETO cookie (or prompts OTP if 2FA enabled); locks after 5 failures |
 | `POST` | `/api/auth/verify-otp` | No | Submit OTP code to complete login |
 | `GET` | `/api/auth/verify-email` | No | Confirm email via token in link |
+| `GET` | `/api/auth/unlock-account` | No | Verify ed25519 token from lockout email to unlock account |
 | `POST` | `/api/auth/logout` | Yes | Clear auth cookie |
 | `GET` | `/api/settings` | Yes | Fetch user settings |
 | `POST` | `/api/settings/2fa` | Yes | Toggle 2FA on/off |
+| `POST` | `/api/settings/change-password` | Yes | Change password; rejects last 5 used passwords |
 
 ### DB Schema
 
-**`users`** — `id` (UUID), `email`, `password_hash`, `created_at`, `updated_at`, `otp_enabled` (bool), `is_verified` (bool), `verification_public_key` (nullable)
+**`users`** — `id` (UUID), `email`, `password_hash`, `created_at`, `updated_at`, `otp_enabled` (bool), `is_verified` (bool), `verification_public_key` (nullable), `is_admin` (bool), `is_locked` (bool), `unlock_public_key` (nullable)
 
 **`otp_codes`** — `id` (UUID), `user_id` (UUID → users), `code`, `expires_at`, `used` (bool), `created_at`
+
+**`password_history`** — `id` (UUID), `user_id` (UUID → users), `password_hash`, `created_at`; pruned to 5 most recent entries per user on each password change
+
+**`failed_login_attempts`** — `id` (UUID), `user_id` (UUID → users), `attempted_at`; cleared on successful login or account unlock; triggers lockout at 5 entries
+
+### Lockout flow
+
+1. Each wrong password inserts a row into `failed_login_attempts`.
+2. On the 5th failure: `users.is_locked` → `true`, an ed25519 keypair is generated, the verifying key is stored in `users.unlock_public_key`, and a lockout email is sent with a signed link (`uid`, `ts`, `sig`).
+3. `GET /api/auth/unlock-account` verifies the signature (1-hour expiry), sets `is_locked` → `false`, clears `unlock_public_key`, and deletes all `failed_login_attempts` for the user.
+4. Locked accounts are rejected at login before any password work is done.
 
 ### Running the backend
 ```bash

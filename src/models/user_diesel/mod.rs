@@ -14,6 +14,8 @@ pub struct User {
     pub is_verified: bool,
     pub verification_public_key: Option<String>,
     pub is_admin: bool,
+    pub is_locked: bool,
+    pub unlock_public_key: Option<String>,
 }
 
 #[derive(Insertable)]
