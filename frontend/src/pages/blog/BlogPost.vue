@@ -11,7 +11,7 @@
         <p class="back-link" @click="router.push('/blog')">← Back to blog</p>
         <h1 class="post-title">{{ post.title }}</h1>
         <p class="post-date">{{ formatDate(post.created_at) }}</p>
-        <div class="post-content" v-html="post.content"></div>
+        <div class="post-content" v-html="renderedContent"></div>
       </article>
 
       <section class="comments-section">
@@ -73,8 +73,14 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { marked } from 'marked'
 import hljs from 'highlight.js/lib/common'
 import 'highlight.js/styles/github-dark-dimmed.css'
+
+marked.use({
+  gfm: true,
+  breaks: true
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -91,6 +97,7 @@ const submitting = ref(false)
 const submitError = ref(null)
 
 const isLoggedIn = computed(() => localStorage.getItem('logged_in') === '1')
+const renderedContent = computed(() => marked.parse(post.value?.content ?? ''))
 
 onMounted(async () => {
   await loadPost()

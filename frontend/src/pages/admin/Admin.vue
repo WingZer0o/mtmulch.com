@@ -69,7 +69,7 @@
         </div>
 
         <div class="editor-body">
-          <div ref="editorEl" class="quill-mount"></div>
+          <div ref="editorEl" class="editor-mount"></div>
         </div>
 
         <div class="editor-footer">
@@ -101,9 +101,9 @@
 
 <script setup>
 import { ref, nextTick, onBeforeUnmount } from 'vue'
-import Quill from 'quill'
-import 'quill/dist/quill.snow.css'
-import hljs from 'highlight.js/lib/common'
+import { StacksEditor, EditorType } from '@stackoverflow/stacks-editor'
+import '@stackoverflow/stacks-editor/dist/styles.css'
+import '@stackoverflow/stacks/dist/css/stacks.css'
 import 'highlight.js/styles/github-dark-dimmed.css'
 import { apiFetch } from '../../api'
 
@@ -133,59 +133,40 @@ async function loadPosts() {
 }
 
 function destroyEditor() {
-  editorInstance = null
-  if (editorEl.value) editorEl.value.innerHTML = ''
+  if (editorInstance) {
+    editorInstance.destroy()
+    editorInstance = null
+  }
 }
 
 async function mountEditor(initialContent = '') {
   await nextTick()
   if (!editorEl.value) return
   destroyEditor()
-  editorInstance = new Quill(editorEl.value, {
-    theme: 'snow',
-    modules: {
-      syntax: { hljs },
-      toolbar: [
-        [{ header: [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        ['blockquote', 'code-block'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        ['link', 'image'],
-        ['clean'],
-      ],
-    },
+  editorInstance = new StacksEditor(editorEl.value, initialContent, {
+    defaultView: EditorType.RichText,
   })
-  if (initialContent) {
-    editorInstance.clipboard.dangerouslyPasteHTML(initialContent)
-  }
 }
 
 function newPost() {
-  selected.value = null;
-  form.value = { title: '', slug: '', published: false };
-  editing.value = true;
-  mountEditor('');
+  selected.value = null
+  form.value = { title: '', slug: '', published: false }
+  editing.value = true
+  mountEditor('')
 }
 
 function selectPost(post) {
-  selected.value = post;
-  form.value = { title: post.title, slug: post.slug, published: post.published };
-  editing.value = true;
-  mountEditor(post.content);
-}
-
-function getCleanHTML() {
-  if (!editorInstance) return ''
-  const root = editorInstance.root.cloneNode(true)
-  root.querySelectorAll('.ql-ui').forEach(el => el.remove())
-  return root.innerHTML
+  selected.value = post
+  form.value = { title: post.title, slug: post.slug, published: post.published }
+  editing.value = true
+  mountEditor(post.content)
 }
 
 async function save() {
-  saveError.value = null;
-  saveSuccess.value = false;
-  saving.value = true;
-  const content = getCleanHTML();
+  saveError.value = null
+  saveSuccess.value = false
+  saving.value = true
+  const content = editorInstance?.content ?? ''
 
   try {
     const body = { ...form.value, content }
@@ -243,118 +224,27 @@ onBeforeUnmount(destroyEditor)
 loadPosts()
 </script>
 
-<!-- Global overrides: Quill theme -->
 <style>
-/* ── Toolbar ─────────────────────────────────────────────────── */
-.quill-mount .ql-toolbar.ql-snow {
-  background: var(--bg-card);
-  border: none;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.quill-mount .ql-toolbar.ql-snow .ql-stroke { stroke: var(--text-muted); }
-.quill-mount .ql-toolbar.ql-snow .ql-fill   { fill:   var(--text-muted); }
-.quill-mount .ql-toolbar.ql-snow .ql-picker  { color:  var(--text-muted); }
-
-.quill-mount .ql-toolbar.ql-snow button:hover .ql-stroke,
-.quill-mount .ql-toolbar.ql-snow button.ql-active .ql-stroke { stroke: var(--accent); }
-.quill-mount .ql-toolbar.ql-snow button:hover .ql-fill,
-.quill-mount .ql-toolbar.ql-snow button.ql-active .ql-fill   { fill:   var(--accent); }
-
-.quill-mount .ql-toolbar.ql-snow .ql-picker-label:hover,
-.quill-mount .ql-toolbar.ql-snow .ql-picker-label.ql-active  { color:  var(--accent); }
-.quill-mount .ql-toolbar.ql-snow .ql-picker-label:hover .ql-stroke,
-.quill-mount .ql-toolbar.ql-snow .ql-picker-label.ql-active .ql-stroke { stroke: var(--accent); }
-
-.quill-mount .ql-toolbar.ql-snow .ql-picker-options {
-  background: var(--bg-card);
-  border-color: var(--border);
-}
-.quill-mount .ql-toolbar.ql-snow .ql-picker-item { color: var(--text-muted); }
-.quill-mount .ql-toolbar.ql-snow .ql-picker-item:hover,
-.quill-mount .ql-toolbar.ql-snow .ql-picker-item.ql-selected { color: var(--accent); }
-
-/* ── Container + editor area ─────────────────────────────────── */
-.quill-mount .ql-container.ql-snow {
-  border: none;
-  background: var(--bg);
+/* Make the Stacks Editor fill the editor-body container */
+.editor-mount {
+  display: flex;
+  flex-direction: column;
   flex: 1;
-  overflow-y: auto;
-  font-family: inherit;
-  font-size: 15.5px;
-}
-
-.quill-mount .ql-editor {
-  color: var(--text);
-  line-height: 1.85;
-  caret-color: var(--accent);
-  min-height: 400px;
-  padding: 24px 32px;
-}
-
-.quill-mount .ql-editor.ql-blank::before {
-  color: var(--border);
-  font-style: italic;
-}
-
-/* ── Content styles ──────────────────────────────────────────── */
-.quill-mount .ql-editor h1,
-.quill-mount .ql-editor h2,
-.quill-mount .ql-editor h3 { color: var(--text); }
-
-.quill-mount .ql-editor blockquote {
-  border-left: 3px solid var(--accent);
-  color: var(--text-muted);
-  padding-left: 16px;
-  font-style: italic;
-}
-
-.quill-mount .ql-editor code {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--accent);
-  border-radius: 4px;
-  padding: 0.1em 0.4em;
-}
-
-/* Quill 2 wraps syntax blocks in a container with a language picker */
-.quill-mount .ql-code-block-container {
-  background: #1c2128;
-  border-radius: 8px;
-  margin: 1.2em 0;
   overflow: hidden;
 }
 
-.quill-mount .ql-code-block-container select.ql-ui {
-  background: #2d333b;
-  color: #adbac7;
-  border: none;
-  border-bottom: 1px solid #373e47;
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  font-family: var(--mono);
-  width: 100%;
-  outline: none;
-  cursor: pointer;
+.editor-mount > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
-.quill-mount .ql-code-block-container .ql-code-block {
-  padding: 16px 20px;
-  overflow-x: auto;
+.editor-mount .s-editor-resizable {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
-
-.quill-mount .ql-editor a { color: var(--accent); }
-
-.quill-mount .ql-editor img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-  display: block;
-  margin: 0.5em 0;
-}
-
-.quill-mount .ql-editor ::selection { background: rgba(124, 106, 247, 0.25); }
 </style>
 
 <style scoped>
@@ -615,13 +505,6 @@ loadPosts()
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
-}
-
-.quill-mount {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
 }
 
 /* Editor footer */
