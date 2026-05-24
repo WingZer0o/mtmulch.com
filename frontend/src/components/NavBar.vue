@@ -26,6 +26,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import {logOut} from '../api';
 
 const route = useRoute()
 const router = useRouter()
@@ -51,8 +52,7 @@ function navigate(path) {
 
 async function handleLogout() {
   drawer.value = false
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-  localStorage.removeItem('logged_in')
+  await logOut();
   isLoggedIn.value = false
   isAdmin.value = false
   router.push('/')

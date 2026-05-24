@@ -94,7 +94,7 @@ pub async fn post_verify_otp(
 
     let session = {
         let b = Cookie::build("session", token)
-            .http_only(true)
+            .http_only(false)
             .secure(true)
             .same_site(SameSite::None)
             .path("/")

@@ -38,7 +38,7 @@ fn build_session_cookie(user_id: Uuid) -> Result<Cookie<'static>, actix_web::Err
         .to_string();
 
     Ok(Cookie::build("session", token)
-        .http_only(true)
+        .http_only(false)
         .secure(true)
         .same_site(SameSite::None)
         .path("/")
