@@ -30,6 +30,22 @@ pub fn send_verification_email(api_key: &str, to_email: &str, link: &str) -> Res
     resend_post(api_key, &body)
 }
 
+pub fn send_account_locked_email(api_key: &str, to_email: &str, link: &str) -> Result<(), String> {
+    let body = serde_json::json!({
+        "from": "noreply@mtmulch.com",
+        "to": [to_email],
+        "subject": "Your account has been locked",
+        "html": format!(
+            "<p>Your account has been locked after too many failed login attempts.</p>\
+             <p>Click the link below to verify your email address and unlock your account.</p>\
+             <p><a href=\"{link}\">Unlock my account</a></p>\
+             <p>This link expires in 1 hour. If you did not attempt to log in, please contact support immediately.</p>"
+        ),
+    });
+
+    resend_post(api_key, &body)
+}
+
 fn resend_post(api_key: &str, body: &serde_json::Value) -> Result<(), String> {
     match ureq::post("https://api.resend.com/emails")
         .set("Authorization", &format!("Bearer {}", api_key))

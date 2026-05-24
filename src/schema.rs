@@ -14,6 +14,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    failed_login_attempts (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        attempted_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     otp_codes (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -54,10 +62,13 @@ diesel::table! {
         is_verified -> Bool,
         verification_public_key -> Nullable<Varchar>,
         is_admin -> Bool,
+        is_locked -> Bool,
+        unlock_public_key -> Nullable<Varchar>,
     }
 }
 
 diesel::joinable!(blog_posts -> users (author_id));
+diesel::joinable!(failed_login_attempts -> users (user_id));
 diesel::joinable!(otp_codes -> users (user_id));
 diesel::joinable!(password_history -> users (user_id));
 diesel::joinable!(post_comments -> blog_posts (post_id));
@@ -65,6 +76,7 @@ diesel::joinable!(post_comments -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     blog_posts,
+    failed_login_attempts,
     otp_codes,
     password_history,
     post_comments,
