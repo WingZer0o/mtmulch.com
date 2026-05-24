@@ -71,8 +71,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import hljs from 'highlight.js/lib/common'
+import 'highlight.js/styles/github-dark-dimmed.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -106,6 +108,8 @@ async function loadPost() {
   } finally {
     loading.value = false
   }
+  await nextTick()
+  hljs.highlightAll()
 }
 
 async function loadComments() {
@@ -228,11 +232,18 @@ function maskEmail(email) {
 }
 
 .post-content :deep(pre) {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 1rem;
   overflow-x: auto;
+  margin: 1rem 0;
+}
+
+/* Let hljs own the code block — reset the inline-code styles that would override it */
+.post-content :deep(pre code) {
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
 }
 
 .post-content :deep(blockquote) {

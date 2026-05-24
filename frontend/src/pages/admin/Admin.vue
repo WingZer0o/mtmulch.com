@@ -103,6 +103,8 @@
 import { ref, nextTick, onBeforeUnmount } from 'vue'
 import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
+import hljs from 'highlight.js/lib/common'
+import 'highlight.js/styles/github-dark-dimmed.css'
 import { apiFetch } from '../../api'
 
 const posts = ref([])
@@ -142,12 +144,13 @@ async function mountEditor(initialContent = '') {
   editorInstance = new Quill(editorEl.value, {
     theme: 'snow',
     modules: {
+      syntax: { hljs },
       toolbar: [
         [{ header: [1, 2, 3, false] }],
         ['bold', 'italic', 'underline', 'strike'],
         ['blockquote', 'code-block'],
         [{ list: 'ordered' }, { list: 'bullet' }],
-        ['link'],
+        ['link', 'image'],
         ['clean'],
       ],
     },
@@ -171,11 +174,18 @@ function selectPost(post) {
   mountEditor(post.content);
 }
 
+function getCleanHTML() {
+  if (!editorInstance) return ''
+  const root = editorInstance.root.cloneNode(true)
+  root.querySelectorAll('.ql-ui').forEach(el => el.remove())
+  return root.innerHTML
+}
+
 async function save() {
   saveError.value = null;
   saveSuccess.value = false;
   saving.value = true;
-  const content = editorInstance?.root.innerHTML ?? '';
+  const content = getCleanHTML();
 
   try {
     const body = { ...form.value, content }
@@ -276,19 +286,16 @@ loadPosts()
 }
 
 .quill-mount .ql-editor {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 32px 40px;
   color: var(--text);
   line-height: 1.85;
   caret-color: var(--accent);
   min-height: 400px;
+  padding: 24px 32px;
 }
 
 .quill-mount .ql-editor.ql-blank::before {
   color: var(--border);
   font-style: italic;
-  left: calc(50% - 380px + 40px);
 }
 
 /* ── Content styles ──────────────────────────────────────────── */
@@ -303,25 +310,49 @@ loadPosts()
   font-style: italic;
 }
 
-.quill-mount .ql-editor code,
-.quill-mount .ql-editor pre {
+.quill-mount .ql-editor code {
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--accent);
   border-radius: 4px;
+  padding: 0.1em 0.4em;
 }
 
-.quill-mount .ql-editor pre.ql-syntax {
-  background: var(--bg-card);
-  border-color: var(--border);
-  color: var(--text);
+/* Quill 2 wraps syntax blocks in a container with a language picker */
+.quill-mount .ql-code-block-container {
+  background: #1c2128;
   border-radius: 8px;
-  padding: 16px 20px;
   margin: 1.2em 0;
+  overflow: hidden;
+}
+
+.quill-mount .ql-code-block-container select.ql-ui {
+  background: #2d333b;
+  color: #adbac7;
+  border: none;
+  border-bottom: 1px solid #373e47;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  width: 100%;
+  outline: none;
+  cursor: pointer;
+}
+
+.quill-mount .ql-code-block-container .ql-code-block {
+  padding: 16px 20px;
   overflow-x: auto;
 }
 
 .quill-mount .ql-editor a { color: var(--accent); }
+
+.quill-mount .ql-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+  margin: 0.5em 0;
+}
 
 .quill-mount .ql-editor ::selection { background: rgba(124, 106, 247, 0.25); }
 </style>
