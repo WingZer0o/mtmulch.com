@@ -7,6 +7,11 @@
         Email verified — you can now sign in.
       </div>
 
+      <!-- Account unlocked banner -->
+      <div v-if="unlockedBanner" class="unlocked-banner">
+        Account unlocked — you can now sign in.
+      </div>
+
       <!-- Login -->
       <div v-if="view === 'login'">
         <p class="label">Welcome back</p>
@@ -105,11 +110,11 @@ const router = useRouter()
 
 const view = computed(() => route.path === '/register' ? 'register' : 'login')
 const verifiedBanner = ref(false)
+const unlockedBanner = ref(false)
 
 onMounted(() => {
-  if (route.query.verified === '1') {
-    verifiedBanner.value = true
-  }
+  if (route.query.verified === '1') verifiedBanner.value = true
+  if (route.query.unlocked === '1') unlockedBanner.value = true
 })
 
 const login = reactive({ email: '', password: '' })
@@ -144,9 +149,16 @@ async function handleLogin() {
       body: JSON.stringify(body),
     })
 
-    if (res.status === 401) { toast('Invalid email or password', 'error'); return }
-    if (res.status === 403) { toast('Please verify your email before signing in', 'error'); return }
-    if (!res.ok) { toast('Sign in failed', 'error'); return }
+    if (res.status === 401) { toast('Invalid email or password.', 'error'); return }
+    if (res.status === 403) {
+      const msg = await res.text()
+      toast(msg.toLowerCase().includes('locked')
+        ? 'Account locked. Check your email for an unlock link.'
+        : 'Please verify your email before signing in.',
+        'error')
+      return
+    }
+    if (!res.ok) { toast('Sign in failed.', 'error'); return }
 
     const data = await res.json()
     if (data.otp_required) {
@@ -243,6 +255,16 @@ function handleRegister() {
   background: #14532d;
   border: 1px solid #166534;
   color: #bbf7d0;
+  border-radius: 6px;
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.unlocked-banner {
+  background: #1e3a5f;
+  border: 1px solid #1d4ed8;
+  color: #bfdbfe;
   border-radius: 6px;
   padding: 0.65rem 1rem;
   font-size: 0.875rem;
