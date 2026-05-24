@@ -1,7 +1,7 @@
 import router from './router'
 
 export async function apiFetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
-  const res = await fetch(input, { credentials: 'include', ...init });
+  const res = await fetch(input, { ...init, credentials: 'include' });
   if (res.status === 401) {
     await unauthorizedHandler();
     throw new Error('Unauthorized');

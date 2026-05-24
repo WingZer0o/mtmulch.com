@@ -96,7 +96,7 @@ pub async fn post_verify_otp(
         let b = Cookie::build("session", token)
             .http_only(true)
             .secure(true)
-            .same_site(SameSite::Lax)
+            .same_site(SameSite::None)
             .path("/")
             .max_age(Duration::hours(24));
         b.finish()
@@ -106,7 +106,7 @@ pub async fn post_verify_otp(
         let b = Cookie::build("is_admin", if is_admin { "true" } else { "false" })
             .http_only(false)
             .secure(true)
-            .same_site(SameSite::Lax)
+            .same_site(SameSite::None)
             .path("/")
             .max_age(Duration::hours(24));
         b.finish()

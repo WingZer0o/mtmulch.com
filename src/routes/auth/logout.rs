@@ -6,7 +6,7 @@ fn removal_cookie(name: &'static str, http_only: bool) -> Cookie<'static> {
     let builder = Cookie::build(name, "")
         .http_only(http_only)
         .secure(true)
-        .same_site(SameSite::Lax)
+        .same_site(SameSite::None)
         .path("/")
         .max_age(Duration::ZERO)
         .expires(OffsetDateTime::now_utc() - Duration::days(1));
