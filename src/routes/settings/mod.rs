@@ -2,6 +2,7 @@ use actix_web::web;
 
 use crate::middleware::PasetoAuth;
 
+pub mod change_password;
 pub mod get_settings;
 pub mod toggle_2fa;
 
@@ -10,6 +11,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         web::scope("/settings")
             .wrap(PasetoAuth)
             .service(get_settings::get_settings)
-            .service(toggle_2fa::toggle_2fa),
+            .service(toggle_2fa::toggle_2fa)
+            .service(change_password::change_password),
     );
 }

@@ -25,6 +25,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    password_history (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        password_hash -> Varchar,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     post_comments (id) {
         id -> Uuid,
         post_id -> Uuid,
@@ -50,7 +59,14 @@ diesel::table! {
 
 diesel::joinable!(blog_posts -> users (author_id));
 diesel::joinable!(otp_codes -> users (user_id));
+diesel::joinable!(password_history -> users (user_id));
 diesel::joinable!(post_comments -> blog_posts (post_id));
 diesel::joinable!(post_comments -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(blog_posts, otp_codes, post_comments, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    blog_posts,
+    otp_codes,
+    password_history,
+    post_comments,
+    users,
+);

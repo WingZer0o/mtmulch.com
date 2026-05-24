@@ -29,6 +29,53 @@
             </label>
           </div>
         </div>
+
+        <div class="section section-border">
+          <h2>Change Password</h2>
+
+          <form class="pw-form" @submit.prevent="handleChangePassword">
+            <div class="field">
+              <label class="field-label">Current password</label>
+              <input
+                v-model="pw.current"
+                type="password"
+                class="field-input"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <div class="field">
+              <label class="field-label">New password</label>
+              <input
+                v-model="pw.next"
+                type="password"
+                class="field-input"
+                autocomplete="new-password"
+                required
+              />
+            </div>
+            <div class="field">
+              <label class="field-label">Confirm new password</label>
+              <input
+                v-model="pw.confirm"
+                type="password"
+                class="field-input"
+                autocomplete="new-password"
+                required
+              />
+              <p v-if="pw.next && pw.confirm && pw.next !== pw.confirm" class="field-error">
+                Passwords do not match.
+              </p>
+            </div>
+            <button
+              type="submit"
+              class="btn-primary"
+              :disabled="pwSaving || pw.next !== pw.confirm"
+            >
+              {{ pwSaving ? 'Updating…' : 'Update password' }}
+            </button>
+          </form>
+        </div>
       </template>
     </div>
   </div>
@@ -39,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { apiFetch } from '../../api'
 
 const email = ref('')
@@ -48,6 +95,9 @@ const loading = ref(true)
 const fetchError = ref('')
 const saving = ref(false)
 const snackbar = ref({ show: false, message: '', color: 'success' as 'success' | 'error' })
+
+const pw = reactive({ current: '', next: '', confirm: '' })
+const pwSaving = ref(false)
 
 function toast(message: string, color: 'success' | 'error' = 'success') {
   snackbar.value = { show: true, message, color }
@@ -85,6 +135,40 @@ async function handleToggle() {
     toast('Network error.', 'error')
   } finally {
     saving.value = false
+  }
+}
+
+async function handleChangePassword() {
+  if (pw.next !== pw.confirm) return
+  pwSaving.value = true
+  try {
+    const res = await apiFetch('/api/settings/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        current_password: pw.current,
+        new_password: pw.next,
+        confirm_password: pw.confirm,
+      }),
+    })
+
+    if (res.status === 401) { toast('Current password is incorrect.', 'error'); return }
+    if (res.status === 400) {
+      const text = await res.text()
+      toast(text.includes('recently') ? 'That password was used recently.' : text, 'error')
+      return
+    }
+    if (!res.ok) { toast('Failed to change password.', 'error'); return }
+
+    pw.current = ''
+    pw.next = ''
+    pw.confirm = ''
+    toast('Password updated successfully.')
+  } catch {
+    toast('Network error.', 'error')
+  } finally {
+    pwSaving.value = false
   }
 }
 </script>
@@ -143,6 +227,12 @@ h2 {
 .section {
   display: flex;
   flex-direction: column;
+}
+
+.section-border {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
 }
 
 .toggle-row {
@@ -207,6 +297,68 @@ h2 {
 
 .switch input:disabled + .slider {
   opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.field-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.875rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field-input:focus {
+  border-color: var(--accent);
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: #f87171;
+  margin-top: 0.1rem;
+}
+
+.btn-primary {
+  margin-top: 0.25rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  align-self: flex-start;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
