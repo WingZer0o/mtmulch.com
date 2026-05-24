@@ -9,18 +9,29 @@ export const apiFetch = async (input: RequestInfo, init?: RequestInit): Promise<
   return res;
 }
 
+let loggingOut = false;
+
 const unauthorizedHandler = async () => {
+  if (loggingOut) return;
+  loggingOut = true;
   await logOut();
   router.push('/login');
+  loggingOut = false;
 }
 
 export const logOut = async () => {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  clearAuthCookies();
+  localStorage.removeItem('logged_in');
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch { /* best-effort */ }
+}
+
+function clearAuthCookies() {
   const root = window.location.hostname.replace(/^www\./, '');
   for (const name of ['session', 'is_admin']) {
-    document.cookie = `${name}=; Max-Age=0; Path=/; Secure; SameSite=Lax`;
-    document.cookie = `${name}=; Max-Age=0; Path=/; Domain=${root}; Secure; SameSite=Lax`;
-    document.cookie = `${name}=; Max-Age=0; Path=/; Domain=.${root}; Secure; SameSite=Lax`;
+    document.cookie = `${name}=; Max-Age=0; Path=/; Secure; SameSite=None`;
+    document.cookie = `${name}=; Max-Age=0; Path=/; Domain=${root}; Secure; SameSite=None`;
+    document.cookie = `${name}=; Max-Age=0; Path=/; Domain=.${root}; Secure; SameSite=None`;
   }
-  localStorage.removeItem('logged_in');
 }

@@ -5,6 +5,7 @@ import Settings from './pages/settings/Settings.vue'
 import Blog from './pages/blog/Blog.vue'
 import BlogPost from './pages/blog/BlogPost.vue'
 import Admin from './pages/admin/Admin.vue'
+import { logOut } from './api'
 
 function getIsAdminCookie(): boolean {
   const match = document.cookie.split('; ').find(row => row.startsWith('is_admin='))
@@ -22,16 +23,25 @@ export default createRouter({
     {
       path: '/settings',
       component: Settings,
-      beforeEnter: () => {
-        if (localStorage.getItem('logged_in') !== '1') return '/login'
+      beforeEnter: async () => {
+        if (localStorage.getItem('logged_in') !== '1') {
+          await logOut();
+          return '/login'
+        } 
       },
     },
     {
       path: '/admin',
       component: Admin,
-      beforeEnter: () => {
-        if (localStorage.getItem('logged_in') !== '1') return '/login'
-        if (!getIsAdminCookie()) return '/'
+      beforeEnter: async () => {
+        if (localStorage.getItem('logged_in') !== '1') {
+          await logOut();
+          return '/login'
+        } 
+        if (!getIsAdminCookie()) {
+          await logOut();
+          return '/'
+        }
       },
     },
   ]
