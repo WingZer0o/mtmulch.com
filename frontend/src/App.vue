@@ -8,12 +8,18 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useTheme } from 'vuetify'
 import NavBar from './components/NavBar.vue'
 
 const route = useRoute()
 const isFullWidth = computed(() => route.path === '/admin')
+
+const theme = useTheme()
+onMounted(() => {
+  theme.global.name.value = localStorage.getItem('theme') || 'light'
+})
 </script>
 
 <style scoped>
