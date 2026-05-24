@@ -18,7 +18,8 @@ const isFullWidth = computed(() => route.path === '/admin')
 
 const theme = useTheme()
 onMounted(() => {
-  theme.global.name.value = localStorage.getItem('theme') || 'light'
+  const savedTheme = localStorage.getItem('theme');
+  theme.change(savedTheme ?? 'light');
 })
 </script>
 

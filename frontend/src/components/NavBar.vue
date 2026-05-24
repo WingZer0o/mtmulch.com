@@ -37,11 +37,14 @@ import { useTheme } from 'vuetify'
 import {logOut} from '../api';
 
 const theme = useTheme()
-const isDark = computed(() => theme.global.name.value === 'dark')
+const isDark = computed(() => 
+  
+  theme.global.name.value === 'dark'
+)
 
 function toggleTheme() {
   const next = isDark.value ? 'light' : 'dark'
-  theme.global.name.value = next
+  theme.change(next);
   localStorage.setItem('theme', next)
 }
 

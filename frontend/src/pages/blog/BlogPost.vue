@@ -35,17 +35,17 @@
           </div>
         </div>
 
+        <v-textarea
+          v-model="newComment"
+          rows="5"
+          placeholder="Write a comment..."
+          :disabled="submitting"
+          hide-details
+          class="comment-textarea"
+          clearable 
+        />
         <div v-if="isLoggedIn" class="comment-form">
           <h3 class="form-heading">Leave a comment</h3>
-          <v-textarea
-            v-model="newComment"
-            variant="outlined"
-            rows="5"
-            placeholder="Write a comment..."
-            :disabled="submitting"
-            hide-details
-            class="comment-textarea"
-          />
           <div class="form-actions">
             <v-btn
               @click="submitComment"
