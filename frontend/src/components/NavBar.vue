@@ -4,6 +4,13 @@
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
     </template>
     <v-app-bar-title class="logo">mm</v-app-bar-title>
+    <template v-slot:append>
+      <v-btn
+        :icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+        variant="text"
+        @click="toggleTheme"
+      />
+    </template>
   </v-app-bar>
 
   <v-navigation-drawer v-model="drawer" temporary>
@@ -24,9 +31,22 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useTheme } from 'vuetify'
 import {logOut} from '../api';
+
+const theme = useTheme()
+const isDark = computed(() => 
+  
+  theme.global.name.value === 'dark'
+)
+
+function toggleTheme() {
+  const next = isDark.value ? 'light' : 'dark'
+  theme.change(next);
+  localStorage.setItem('theme', next)
+}
 
 const route = useRoute()
 const router = useRouter()

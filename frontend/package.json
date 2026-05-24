@@ -10,7 +10,10 @@
   "dependencies": {
     "@fontsource/roboto": "^5.2.10",
     "@mdi/font": "^7.4.47",
-    "quill": "^2.0.3",
+    "@stackoverflow/stacks": "^2.8.6",
+    "@stackoverflow/stacks-editor": "^0.15.3",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.4",
     "vue": "^3.5.0",
     "vue-router": "^5.0.6",
     "vuetify": "^4.0.7"

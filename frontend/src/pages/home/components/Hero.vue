@@ -63,15 +63,6 @@ h2 {
   flex-wrap: wrap;
 }
 
-.btn-primary {
-  padding: 0.75rem 1.75rem;
-  background: var(--accent);
-  color: #fff;
-  border-radius: 6px;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
 .btn-primary:hover {
   background: var(--accent-hover);
   color: #fff;
