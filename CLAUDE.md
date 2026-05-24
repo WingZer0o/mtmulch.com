@@ -23,6 +23,7 @@ rust-playground/
 │   ├── models/
 │   │   ├── mod.rs
 │   │   ├── otp_code/mod.rs          # OTP code model
+│   │   ├── password_history/mod.rs  # Password history model (last 5 hashes)
 │   │   └── user_diesel/mod.rs       # User model
 │   └── routes/
 │       ├── mod.rs
@@ -35,6 +36,7 @@ rust-playground/
 │       │   └── verify_otp.rs        # POST /api/auth/verify-otp
 │       └── settings/
 │           ├── mod.rs               # Registers /api/settings/* routes
+│           ├── change_password.rs   # POST /api/settings/change-password (auth-guarded)
 │           ├── get_settings.rs      # GET  /api/settings
 │           └── toggle_2fa.rs        # POST /api/settings/2fa
 ├── migrations/       # Diesel SQL migrations
@@ -60,7 +62,7 @@ rust-playground/
 │           │       ├── Projects.vue
 │           │       └── Contact.vue
 │           └── settings/
-│               └── Settings.vue     # User settings (2FA toggle)
+│               └── Settings.vue     # User settings (2FA toggle, change password)
 │       └── components/
 │           └── NavBar.vue           # v-app-bar + v-navigation-drawer
 ├── Dockerfile
@@ -91,12 +93,15 @@ All routes are under the `/api` prefix.
 | `POST` | `/api/auth/logout` | Yes | Clear auth cookie |
 | `GET` | `/api/settings` | Yes | Fetch user settings |
 | `POST` | `/api/settings/2fa` | Yes | Toggle 2FA on/off |
+| `POST` | `/api/settings/change-password` | Yes | Change password; rejects last 5 used passwords |
 
 ### DB Schema
 
-**`users`** — `id` (UUID), `email`, `password_hash`, `created_at`, `updated_at`, `otp_enabled` (bool), `is_verified` (bool), `verification_public_key` (nullable)
+**`users`** — `id` (UUID), `email`, `password_hash`, `created_at`, `updated_at`, `otp_enabled` (bool), `is_verified` (bool), `verification_public_key` (nullable), `is_admin` (bool)
 
 **`otp_codes`** — `id` (UUID), `user_id` (UUID → users), `code`, `expires_at`, `used` (bool), `created_at`
+
+**`password_history`** — `id` (UUID), `user_id` (UUID → users), `password_hash`, `created_at`; pruned to 5 most recent entries per user on each password change
 
 ### Running the backend
 ```bash
