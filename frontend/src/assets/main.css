@@ -81,3 +81,12 @@ section {
     typewriter-type var(--tw-duration, 2s) steps(var(--tw-chars, 15), end) forwards,
     typewriter-blink 0.75s step-end infinite;
 }
+
+.btn-primary {
+  padding: 0.75rem 1.75rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 0.2s;
+}

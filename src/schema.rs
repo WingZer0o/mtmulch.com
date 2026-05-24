@@ -25,6 +25,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    post_comments (id) {
+        id -> Uuid,
+        post_id -> Uuid,
+        user_id -> Uuid,
+        content -> Text,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Uuid,
         email -> Varchar,
@@ -40,5 +50,7 @@ diesel::table! {
 
 diesel::joinable!(blog_posts -> users (author_id));
 diesel::joinable!(otp_codes -> users (user_id));
+diesel::joinable!(post_comments -> blog_posts (post_id));
+diesel::joinable!(post_comments -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(blog_posts, otp_codes, users,);
+diesel::allow_tables_to_appear_in_same_query!(blog_posts, otp_codes, post_comments, users,);

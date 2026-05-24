@@ -6,37 +6,145 @@
 
     <div v-else-if="error" class="error-msg">{{ error }}</div>
 
-    <article v-else class="post-article">
-      <p class="back-link" @click="router.push('/blog')">← Back to blog</p>
-      <h1 class="post-title">{{ post.title }}</h1>
-      <p class="post-date">{{ formatDate(post.created_at) }}</p>
-      <div class="post-content" v-html="post.content"></div>
-    </article>
+    <template v-else>
+      <article class="post-article">
+        <p class="back-link" @click="router.push('/blog')">← Back to blog</p>
+        <h1 class="post-title">{{ post.title }}</h1>
+        <p class="post-date">{{ formatDate(post.created_at) }}</p>
+        <div class="post-content" v-html="post.content"></div>
+      </article>
+
+      <section class="comments-section">
+        <h2 class="comments-heading">Comments</h2>
+
+        <div v-if="commentsLoading" class="loading-wrap">
+          <v-progress-circular indeterminate color="var(--accent)" size="24" />
+        </div>
+
+        <div v-else-if="comments.length === 0 && !commentsLoading" class="no-comments">
+          No comments yet. Be the first!
+        </div>
+
+        <div v-else class="comment-list">
+          <div v-for="c in comments" :key="c.id" class="comment-card">
+            <div class="comment-meta">
+              <span class="comment-author">{{ maskEmail(c.author_email) }}</span>
+              <span class="comment-date">{{ formatDate(c.created_at) }}</span>
+            </div>
+            <p class="comment-body">{{ c.content }}</p>
+          </div>
+        </div>
+
+        <div v-if="isLoggedIn" class="comment-form">
+          <h3 class="form-heading">Leave a comment</h3>
+          <v-textarea
+            v-model="newComment"
+            variant="outlined"
+            rows="5"
+            placeholder="Write a comment..."
+            :disabled="submitting"
+            hide-details
+            class="comment-textarea"
+          />
+          <div class="form-actions">
+            <v-btn
+              @click="submitComment"
+              :loading="submitting"
+              :disabled="!newComment.trim()"
+              variant="flat"
+              class="submit-btn"
+            >
+              Post Comment
+            </v-btn>
+          </div>
+          <p v-if="submitError" class="submit-error">{{ submitError }}</p>
+        </div>
+
+        <div v-else class="login-prompt">
+          <span>
+            <a class="accent-link" @click="router.push('/login')">Log in</a>
+            to leave a comment.
+          </span>
+        </div>
+      </section>
+    </template>
   </v-container>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
+
 const post = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
+const comments = ref([])
+const commentsLoading = ref(true)
+
+const newComment = ref('')
+const submitting = ref(false)
+const submitError = ref(null)
+
+const isLoggedIn = computed(() => localStorage.getItem('logged_in') === '1')
+
 onMounted(async () => {
+  await loadPost()
+})
+
+async function loadPost() {
   try {
     const res = await fetch(`/api/blog/posts/${route.params.slug}`)
     if (res.status === 404) throw new Error('Post not found')
     if (!res.ok) throw new Error('Failed to load post')
     post.value = await res.json()
+    loadComments()
   } catch (e) {
     error.value = e.message
   } finally {
     loading.value = false
   }
-})
+}
+
+async function loadComments() {
+  commentsLoading.value = true
+  try {
+    const res = await fetch(`/api/blog/posts/${route.params.slug}/comments`)
+    if (res.ok) comments.value = await res.json()
+  } finally {
+    commentsLoading.value = false
+  }
+}
+
+async function submitComment() {
+  submitError.value = null
+  submitting.value = true
+  try {
+    const res = await fetch(`/api/blog/posts/${route.params.slug}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ content: newComment.value.trim() }),
+    })
+    if (res.status === 401) {
+      submitError.value = 'Session expired. Please log in again.'
+      return
+    }
+    if (!res.ok) {
+      submitError.value = 'Failed to post comment. Please try again.'
+      return
+    }
+    newComment.value = ''
+    await loadComments()
+  } catch {
+    submitError.value = 'Network error. Please try again.'
+  } finally {
+    submitting.value = false
+  }
+}
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -44,6 +152,12 @@ function formatDate(iso) {
     month: 'long',
     day: 'numeric',
   })
+}
+
+function maskEmail(email) {
+  const [local, domain] = email.split('@')
+  if (local.length <= 2) return `${local}@${domain}`
+  return `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}@${domain}`
 }
 </script>
 
@@ -127,5 +241,139 @@ function formatDate(iso) {
   padding-left: 1rem;
   color: var(--text-muted);
   margin: 1rem 0;
+}
+
+/* Comments */
+.comments-section {
+  margin-top: 3rem;
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+}
+
+.comments-heading {
+  font-size: 1.25rem;
+  color: var(--text);
+  margin: 0 0 1.5rem;
+}
+
+.no-comments {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.comment-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.comment-author {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.comment-date {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.comment-body {
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.comment-form {
+  margin-top: 1.5rem;
+}
+
+.form-heading {
+  font-size: 1rem;
+  color: var(--text);
+  margin: 0 0 0.75rem;
+  font-weight: 500;
+}
+
+.comment-textarea {
+  margin-bottom: 0.75rem;
+}
+
+.comment-textarea :deep(.v-field__input) {
+  background-color: var(--bg-card);
+  color: var(--text);
+}
+
+.comment-textarea :deep(.v-field__overlay) {
+  background-color: transparent;
+}
+
+.comment-textarea :deep(.v-field--focused .v-field__outline) {
+  --v-field-border-opacity: 1;
+  color: var(--accent);
+}
+
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submit-btn {
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  background-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+.submit-btn:hover {
+  background-color: var(--accent-hover) !important;
+}
+
+.comment-textarea :deep(.v-field__outline) {
+  color: var(--border);
+}
+
+.submit-error {
+  color: #f87171;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  text-align: right;
+}
+
+.login-prompt {
+  margin-top: 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.accent-link {
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.accent-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
 }
 </style>
