@@ -4,12 +4,12 @@
     <aside class="admin-sidebar">
       <div class="sidebar-top">
         <span class="sidebar-title">Blog CMS</span>
-        <v-btn class="btn-new" @click="newPost">+ New</v-btn>
+        <v-btn size="small" @click="newPost">+ New</v-btn>
       </div>
 
       <div class="sidebar-list">
         <div v-if="loadingPosts" class="sidebar-loading">
-          <v-progress-circular indeterminate size="20" color="#7c6af7" />
+          <v-progress-circular indeterminate size="20" color="primary" />
         </div>
 
         <template v-else>
@@ -73,23 +73,26 @@
         </div>
 
         <div class="editor-footer">
-          <button
+          <v-btn
             v-if="selected"
-            class="btn-delete"
+            color="error"
+            variant="outlined"
+            :loading="deleting"
             :disabled="deleting"
             @click="confirmDelete"
           >
-            {{ deleting ? 'Deleting…' : 'Delete' }}
-          </button>
+            Delete
+          </v-btn>
           <span v-if="saveError" class="save-error">{{ saveError }}</span>
           <span v-if="saveSuccess" class="save-success">Saved!</span>
-          <button
+          <v-btn
             class="btn-save"
+            :loading="saving"
             :disabled="saving"
             @click="save"
           >
-            {{ saving ? 'Saving…' : selected ? 'Save changes' : 'Create post' }}
-          </button>
+            {{ selected ? 'Save changes' : 'Create post' }}
+          </v-btn>
         </div>
       </template>
     </main>
@@ -230,42 +233,42 @@ onBeforeUnmount(destroyEditor)
 loadPosts()
 </script>
 
-<!-- Global overrides: Quill dark theme -->
+<!-- Global overrides: Quill theme -->
 <style>
 /* ── Toolbar ─────────────────────────────────────────────────── */
 .quill-mount .ql-toolbar.ql-snow {
-  background: #13151f;
+  background: var(--bg-card);
   border: none;
-  border-bottom: 1px solid #2a2d3e;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
-.quill-mount .ql-toolbar.ql-snow .ql-stroke { stroke: #8892a4; }
-.quill-mount .ql-toolbar.ql-snow .ql-fill   { fill:   #8892a4; }
-.quill-mount .ql-toolbar.ql-snow .ql-picker  { color:  #8892a4; }
+.quill-mount .ql-toolbar.ql-snow .ql-stroke { stroke: var(--text-muted); }
+.quill-mount .ql-toolbar.ql-snow .ql-fill   { fill:   var(--text-muted); }
+.quill-mount .ql-toolbar.ql-snow .ql-picker  { color:  var(--text-muted); }
 
 .quill-mount .ql-toolbar.ql-snow button:hover .ql-stroke,
-.quill-mount .ql-toolbar.ql-snow button.ql-active .ql-stroke { stroke: #7c6af7; }
+.quill-mount .ql-toolbar.ql-snow button.ql-active .ql-stroke { stroke: var(--accent); }
 .quill-mount .ql-toolbar.ql-snow button:hover .ql-fill,
-.quill-mount .ql-toolbar.ql-snow button.ql-active .ql-fill   { fill:   #7c6af7; }
+.quill-mount .ql-toolbar.ql-snow button.ql-active .ql-fill   { fill:   var(--accent); }
 
 .quill-mount .ql-toolbar.ql-snow .ql-picker-label:hover,
-.quill-mount .ql-toolbar.ql-snow .ql-picker-label.ql-active  { color:  #7c6af7; }
+.quill-mount .ql-toolbar.ql-snow .ql-picker-label.ql-active  { color:  var(--accent); }
 .quill-mount .ql-toolbar.ql-snow .ql-picker-label:hover .ql-stroke,
-.quill-mount .ql-toolbar.ql-snow .ql-picker-label.ql-active .ql-stroke { stroke: #7c6af7; }
+.quill-mount .ql-toolbar.ql-snow .ql-picker-label.ql-active .ql-stroke { stroke: var(--accent); }
 
 .quill-mount .ql-toolbar.ql-snow .ql-picker-options {
-  background: #1a1d27;
-  border-color: #2a2d3e;
+  background: var(--bg-card);
+  border-color: var(--border);
 }
-.quill-mount .ql-toolbar.ql-snow .ql-picker-item { color: #8892a4; }
+.quill-mount .ql-toolbar.ql-snow .ql-picker-item { color: var(--text-muted); }
 .quill-mount .ql-toolbar.ql-snow .ql-picker-item:hover,
-.quill-mount .ql-toolbar.ql-snow .ql-picker-item.ql-selected { color: #7c6af7; }
+.quill-mount .ql-toolbar.ql-snow .ql-picker-item.ql-selected { color: var(--accent); }
 
 /* ── Container + editor area ─────────────────────────────────── */
 .quill-mount .ql-container.ql-snow {
   border: none;
-  background: #0f1117;
+  background: var(--bg);
   flex: 1;
   overflow-y: auto;
   font-family: inherit;
@@ -276,14 +279,14 @@ loadPosts()
   max-width: 760px;
   margin: 0 auto;
   padding: 32px 40px;
-  color: #e2e8f0;
+  color: var(--text);
   line-height: 1.85;
-  caret-color: #7c6af7;
+  caret-color: var(--accent);
   min-height: 400px;
 }
 
 .quill-mount .ql-editor.ql-blank::before {
-  color: #2e3448;
+  color: var(--border);
   font-style: italic;
   left: calc(50% - 380px + 40px);
 }
@@ -291,39 +294,36 @@ loadPosts()
 /* ── Content styles ──────────────────────────────────────────── */
 .quill-mount .ql-editor h1,
 .quill-mount .ql-editor h2,
-.quill-mount .ql-editor h3 { color: #e2e8f0; }
+.quill-mount .ql-editor h3 { color: var(--text); }
 
 .quill-mount .ql-editor blockquote {
-  border-left: 3px solid #7c6af7;
-  color: #6a7590;
+  border-left: 3px solid var(--accent);
+  color: var(--text-muted);
   padding-left: 16px;
   font-style: italic;
 }
 
 .quill-mount .ql-editor code,
 .quill-mount .ql-editor pre {
-  background: #1a1d27;
-  border: 1px solid #2a2d3e;
-  color: #9585f8;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--accent);
   border-radius: 4px;
 }
 
 .quill-mount .ql-editor pre.ql-syntax {
-  background: #111320;
-  border-color: #23263a;
-  color: #a8b3cf;
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text);
   border-radius: 8px;
   padding: 16px 20px;
   margin: 1.2em 0;
   overflow-x: auto;
 }
 
-.quill-mount .ql-editor a { color: #7c6af7; }
+.quill-mount .ql-editor a { color: var(--accent); }
 
 .quill-mount .ql-editor ::selection { background: rgba(124, 106, 247, 0.25); }
-
-
-
 </style>
 
 <style scoped>
@@ -332,7 +332,7 @@ loadPosts()
   display: flex;
   height: calc(100vh - 64px);
   overflow: hidden;
-  background: #0f1117;
+  background: var(--bg);
   padding-top: 64px;
 }
 
@@ -342,8 +342,8 @@ loadPosts()
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: #13151f;
-  border-right: 1px solid #2a2d3e;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
   overflow: hidden;
 }
 
@@ -352,7 +352,7 @@ loadPosts()
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid #2a2d3e;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -360,11 +360,10 @@ loadPosts()
   font-family: var(--mono);
   font-size: 0.85rem;
   font-weight: 600;
-  color: #7c6af7;
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-
 
 .sidebar-list {
   overflow-y: auto;
@@ -380,7 +379,7 @@ loadPosts()
 .sidebar-empty {
   padding: 20px 16px;
   font-size: 0.85rem;
-  color: #4a5264;
+  color: var(--text-muted);
   text-align: center;
 }
 
@@ -390,24 +389,24 @@ loadPosts()
   justify-content: space-between;
   padding: 10px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #1e2130;
+  border-bottom: 1px solid var(--border);
   transition: background 0.12s;
   gap: 8px;
 }
 
 .sidebar-item:hover {
-  background: #1a1d2a;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .sidebar-item.active {
-  background: rgba(124, 106, 247, 0.1);
-  border-left: 2px solid #7c6af7;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-left: 2px solid var(--accent);
   padding-left: 14px;
 }
 
 .sidebar-item-title {
   font-size: 0.875rem;
-  color: #c8cfe0;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -425,13 +424,13 @@ loadPosts()
 }
 
 .sidebar-item-badge.live {
-  background: rgba(72, 199, 142, 0.15);
-  color: #48c78e;
+  background: rgba(34, 197, 94, 0.15);
+  color: rgb(var(--v-theme-success));
 }
 
 .sidebar-item-badge.draft {
-  background: rgba(136, 146, 164, 0.12);
-  color: #606878;
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color: var(--text-muted);
 }
 
 /* ── Main editor panel ───────────────────────────────── */
@@ -451,7 +450,7 @@ loadPosts()
 
 .editor-empty-inner {
   text-align: center;
-  color: #4a5264;
+  color: var(--text-muted);
 }
 
 .editor-empty-icon {
@@ -465,13 +464,13 @@ loadPosts()
 }
 
 .editor-empty-inner strong {
-  color: #7c6af7;
+  color: var(--accent);
 }
 
 /* Editor header (title + meta) */
 .editor-header {
   padding: 20px 24px 0;
-  border-bottom: 1px solid #2a2d3e;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -482,14 +481,14 @@ loadPosts()
   outline: none;
   font-size: 1.6rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--text);
   margin-bottom: 14px;
   font-family: inherit;
-  caret-color: #7c6af7;
+  caret-color: var(--accent);
 }
 
 .input-title::placeholder {
-  color: #3a4058;
+  color: var(--border);
 }
 
 .editor-meta {
@@ -508,18 +507,18 @@ loadPosts()
 .meta-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #4a5264;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
 .input-slug {
-  background: #1a1d27;
-  border: 1px solid #2a2d3e;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px 10px;
-  color: #e2e8f0;
+  color: var(--text);
   font-family: var(--mono);
   font-size: 0.82rem;
   outline: none;
@@ -528,7 +527,7 @@ loadPosts()
 }
 
 .input-slug:focus {
-  border-color: #7c6af7;
+  border-color: var(--accent);
 }
 
 /* Toggle switch */
@@ -547,14 +546,14 @@ loadPosts()
 .toggle-track {
   width: 36px;
   height: 20px;
-  background: #2a2d3e;
+  background: var(--border);
   border-radius: 10px;
   position: relative;
   transition: background 0.2s;
 }
 
 .toggle-switch input:checked + .toggle-track {
-  background: #7c6af7;
+  background: var(--accent);
 }
 
 .toggle-thumb {
@@ -574,7 +573,7 @@ loadPosts()
 
 .toggle-label {
   font-size: 0.82rem;
-  color: #8892a4;
+  color: var(--text-muted);
   min-width: 60px;
 }
 
@@ -584,7 +583,7 @@ loadPosts()
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgb(11, 10, 10);
+  background: var(--bg);
 }
 
 .quill-mount {
@@ -600,61 +599,22 @@ loadPosts()
   align-items: center;
   gap: 12px;
   padding: 12px 24px;
-  border-top: 1px solid #2a2d3e;
-  background: #13151f;
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
   flex-shrink: 0;
 }
 
 .btn-save {
   margin-left: auto;
-  background: #7c6af7;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 20px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-}
-
-.btn-save:hover:not(:disabled) {
-  background: #9585f8;
-}
-
-.btn-save:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-delete {
-  background: transparent;
-  color: #e05252;
-  border: 1px solid rgba(224, 82, 82, 0.35);
-  border-radius: 8px;
-  padding: 7px 16px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.btn-delete:hover:not(:disabled) {
-  background: rgba(224, 82, 82, 0.1);
-  border-color: rgba(224, 82, 82, 0.6);
-}
-
-.btn-delete:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .save-error {
   font-size: 0.82rem;
-  color: #e05252;
+  color: rgb(var(--v-theme-error));
 }
 
 .save-success {
   font-size: 0.82rem;
-  color: #48c78e;
+  color: rgb(var(--v-theme-success));
 }
 </style>
