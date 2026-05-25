@@ -4,6 +4,7 @@
     <main :class="isFullWidth ? 'full-width-page' : 'container'">
       <RouterView />
     </main>
+    <SnackBar />
   </v-app>
 </template>
 
@@ -12,6 +13,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTheme } from 'vuetify'
 import NavBar from './components/NavBar.vue'
+import SnackBar from './components/SnackBar.vue'
 
 const route = useRoute()
 const isFullWidth = computed(() => route.path === '/admin')

@@ -7,7 +7,7 @@
         <v-divider></v-divider>
         <v-tabs-window v-model="tab">
             <v-tabs-window-item value="one">
-                <v-sheet class="pa-5">
+                <v-sheet>
                     <v-form @submit.prevent="handleSubscribeClick">
                         <v-text-field v-model="subscribeEmail" :rules="emailRules" label="Email"></v-text-field>
                         <v-btn class="mt-2" @click="handleSubscribeClick" block>Subscribe</v-btn>
@@ -15,7 +15,7 @@
                 </v-sheet>
             </v-tabs-window-item>
             <v-tabs-window-item value="two">
-                <v-sheet class="pa-5">
+                <v-sheet>
                     <v-form @submit.prevent="handleUnsubscribeClick">
                         <v-text-field v-model="unsubscribeEmail" :rules="emailRules" label="Email"></v-text-field>
                         <v-btn class="mt-2" @click="handleUnsubscribeClick" block>Unsubscribe</v-btn>

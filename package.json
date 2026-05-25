@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@vueuse/rxjs": "^14.3.0",
+    "rxjs": "^7.8.2"
+  }
+}

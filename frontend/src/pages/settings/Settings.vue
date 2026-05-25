@@ -79,29 +79,22 @@
       </template>
     </div>
   </div>
-
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="bottom">
-    <div class="text-center w-100">{{ snackbar.message }}</div>
-  </v-snackbar>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { apiFetch } from '../../api'
+import {showSnackBar} from "../../components/subjects/snack-bar-subject";
 
 const email = ref('')
 const otpEnabled = ref(false)
 const loading = ref(true)
 const fetchError = ref('')
 const saving = ref(false)
-const snackbar = ref({ show: false, message: '', color: 'success' as 'success' | 'error' })
 
 const pw = reactive({ current: '', next: '', confirm: '' })
 const pwSaving = ref(false)
 
-function toast(message: string, color: 'success' | 'error' = 'success') {
-  snackbar.value = { show: true, message, color }
-}
 
 onMounted(async () => {
   try {
@@ -128,11 +121,11 @@ async function handleToggle() {
       credentials: 'include',
       body: JSON.stringify({ enabled: newEnabled }),
     })
-    if (!res.ok) { toast('Failed to update 2FA setting.', 'error'); return }
+    if (!res.ok) { showSnackBar('Failed to update 2FA setting.', 'error'); return }
     otpEnabled.value = newEnabled
-    toast(newEnabled ? '2FA enabled.' : '2FA disabled.')
+    showSnackBar(newEnabled ? '2FA enabled.' : '2FA disabled.')
   } catch {
-    toast('Network error.', 'error')
+    showSnackBar('Network error.', 'error')
   } finally {
     saving.value = false
   }
@@ -153,20 +146,20 @@ async function handleChangePassword() {
       }),
     })
 
-    if (res.status === 401) { toast('Current password is incorrect.', 'error'); return }
+    if (res.status === 401) { showSnackBar('Current password is incorrect.', 'error'); return }
     if (res.status === 400) {
       const text = await res.text()
-      toast(text.includes('recently') ? 'That password was used recently.' : text, 'error')
+      showSnackBar(text.includes('recently') ? 'That password was used recently.' : text, 'error')
       return
     }
-    if (!res.ok) { toast('Failed to change password.', 'error'); return }
+    if (!res.ok) { showSnackBar('Failed to change password.', 'error'); return }
 
     pw.current = ''
     pw.next = ''
     pw.confirm = ''
-    toast('Password updated successfully.')
+    showSnackBar('Password updated successfully.')
   } catch {
-    toast('Network error.', 'error')
+    showSnackBar('Network error.', 'error')
   } finally {
     pwSaving.value = false
   }
