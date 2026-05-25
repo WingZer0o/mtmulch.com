@@ -17,17 +17,35 @@
         <p class="label">Welcome back</p>
         <h1>Sign in</h1>
 
-        <form @submit.prevent="handleLogin" class="form">
+        <v-form @submit.prevent="handleLogin" class="form">
           <div class="field">
             <label for="login-email">Email</label>
-            <input id="login-email" v-model="login.email" type="email" placeholder="you@example.com" required />
+            <v-text-field
+              id="login-email"
+              v-model="login.email"
+              type="email"
+              variant="outlined"
+              density="compact"
+              placeholder="you@example.com"
+              hide-details
+              required
+            />
           </div>
           <div class="field">
             <label for="login-password">Password</label>
-            <input id="login-password" v-model="login.password" type="password" placeholder="••••••••" required />
+            <v-text-field
+              id="login-password"
+              v-model="login.password"
+              type="password"
+              variant="outlined"
+              density="compact"
+              placeholder="••••••••"
+              hide-details
+              required
+            />
           </div>
           <button type="submit" class="btn-primary">Sign in</button>
-        </form>
+        </v-form>
 
         <p class="switch">
           Don't have an account?
@@ -40,21 +58,48 @@
         <p class="label">Get started</p>
         <h1>Create account</h1>
 
-        <form @submit.prevent="handleRegister" class="form">
+        <v-form @submit.prevent="handleRegister" class="form">
           <div class="field">
             <label for="reg-email">Email</label>
-            <input id="reg-email" v-model="register.email" type="email" placeholder="you@example.com" required />
+            <v-text-field
+              id="reg-email"
+              v-model="register.email"
+              type="email"
+              variant="outlined"
+              density="compact"
+              placeholder="you@example.com"
+              hide-details
+              required
+            />
           </div>
           <div class="field">
             <label for="reg-password">Password</label>
-            <input id="reg-password" v-model="register.password" type="password" placeholder="••••••••" required />
+            <v-text-field
+              id="reg-password"
+              v-model="register.password"
+              type="password"
+              variant="outlined"
+              density="compact"
+              placeholder="••••••••"
+              hide-details
+              required
+            />
           </div>
           <div class="field">
             <label for="reg-confirm">Confirm password</label>
-            <input id="reg-confirm" v-model="register.confirm" type="password" placeholder="••••••••" required />
+            <v-text-field
+              id="reg-confirm"
+              v-model="register.confirm"
+              type="password"
+              variant="outlined"
+              density="compact"
+              placeholder="••••••••"
+              hide-details
+              required
+            />
           </div>
           <button type="submit" class="btn-primary">Create account</button>
-        </form>
+        </v-form>
 
         <p class="switch">
           Already have an account?
@@ -292,38 +337,11 @@ label {
   font-family: var(--mono);
 }
 
-input {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.65rem 0.9rem;
-  color: var(--text);
-  font-size: 0.95rem;
-  font-family: inherit;
-  transition: border-color 0.2s;
-  outline: none;
-}
-
-input:focus {
-  border-color: var(--accent);
-}
-
-input::placeholder {
-  color: var(--text-muted);
-  opacity: 0.6;
-}
-
 .btn-primary {
-  padding: 0.75rem 1.75rem;
-  background: var(--accent);
-  color: #fff;
   border: none;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
   font-family: inherit;
+  font-size: 0.95rem;
   margin-top: 0.25rem;
 }
 

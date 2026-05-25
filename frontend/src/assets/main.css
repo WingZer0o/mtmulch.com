@@ -98,3 +98,46 @@ section {
   font-weight: 500;
   transition: background 0.2s;
 }
+
+/* ── Vuetify v-text-field overrides ── */
+.v-field {
+  background: var(--bg) !important;
+  border-radius: 6px !important;
+}
+
+.v-field__overlay {
+  display: none;
+}
+
+.v-field--variant-outlined .v-field__outline {
+  display: none !important;
+}
+
+.v-field--variant-outlined {
+  border: 1px solid var(--border) !important;
+}
+
+.v-field--variant-outlined.v-field--focused {
+  border-color: var(--accent) !important;
+}
+
+.v-field__input {
+  color: var(--text) !important;
+  font-size: 0.95rem !important;
+  font-family: inherit !important;
+}
+
+.v-field__input::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.6 !important;
+}
+
+.v-label {
+  display: none !important;
+}
+
+.v-messages__message {
+  color: #f87171 !important;
+  font-family: var(--mono) !important;
+  font-size: 0.8rem !important;
+}

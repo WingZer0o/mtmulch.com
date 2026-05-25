@@ -7,20 +7,29 @@
         <v-divider></v-divider>
         <v-tabs-window v-model="tab">
             <v-tabs-window-item value="one">
-                <v-sheet>
-                    <v-form @submit.prevent="handleSubscribeClick">
-                        <v-text-field v-model="subscribeEmail" :rules="emailRules" label="Email"></v-text-field>
-                        <v-btn class="mt-2" @click="handleSubscribeClick" block>Subscribe</v-btn>
+                <div class="form-wrap">
+                    <v-form @submit.prevent="handleSubscribeClick" class="form">
+                        <div class="field">
+                            <label for="sub-email">Email</label>
+                            <v-text-field id="sub-email" v-model="subscribeEmail" :rules="emailRules" variant="outlined"
+                                density="compact" placeholder="you@example.com" hide-details="auto" />
+                        </div>
+                        <button type="submit" class="btn-primary">Subscribe</button>
                     </v-form>
-                </v-sheet>
+                </div>
             </v-tabs-window-item>
             <v-tabs-window-item value="two">
-                <v-sheet>
-                    <v-form @submit.prevent="handleUnsubscribeClick">
-                        <v-text-field v-model="unsubscribeEmail" :rules="emailRules" label="Email"></v-text-field>
-                        <v-btn class="mt-2" @click="handleUnsubscribeClick" block>Unsubscribe</v-btn>
+                <div class="form-wrap">
+                    <v-form @submit.prevent="handleUnsubscribeClick" class="form">
+                        <div class="field">
+                            <label for="unsub-email">Email</label>
+                            <v-text-field id="unsub-email" v-model="unsubscribeEmail" :rules="emailRules"
+                                variant="outlined" density="compact" placeholder="you@example.com"
+                                hide-details="auto" />
+                        </div>
+                        <button type="submit" class="btn-primary">Unsubscribe</button>
                     </v-form>
-                </v-sheet>
+                </div>
             </v-tabs-window-item>
         </v-tabs-window>
     </v-sheet>
@@ -88,3 +97,38 @@ const handleSubscribeClick = async () => {
     }
 }
 </script>
+
+<style scoped>
+.form-wrap {
+    padding: 1.5rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+}
+
+.btn-primary {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
+</style>
