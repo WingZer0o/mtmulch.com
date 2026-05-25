@@ -14,6 +14,7 @@ pub struct BlogPost {
     pub author_id: Uuid,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub views: i64,
 }
 
 #[derive(Insertable)]
