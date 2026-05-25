@@ -17,7 +17,8 @@
         @click="router.push(`/blog/${post.slug}`)">
         <v-col col="4">
           <h2 class="post-title">{{ post.title }}</h2>
-          <p class="post-date">{{ formatDate(post.created_at) }}</p>
+          <p class="post-date"><b>Created:</b> {{ formatDate(post.created_at) }}</p>
+          <p class="post-date"><b>Updated:</b> {{ formatDate(post.updated_at) }}</p>
         </v-col>
       </v-row>
     </div>
@@ -50,6 +51,8 @@ function formatDate(iso) {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 </script>
