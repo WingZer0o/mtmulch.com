@@ -2,6 +2,10 @@
   <v-container class="blog-container" max-width="900">
     <h1 class="text-center blog-title">Blog</h1>
 
+    <div>
+      <BlogSubscriberForm />
+    </div>
+
     <div v-if="loading" class="loading-wrap">
       <v-progress-circular indeterminate color="var(--accent)" />
     </div>
@@ -31,6 +35,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { PostSummary } from './interfaces/blog';
 import { formatUtcDateForDisplay } from './../../helpers/utilities/date-time';
+import BlogSubscriberForm from './components/BlogSubscriberForm.vue';
+import BlogSubscriberForm from './components/BlogSubscriberForm.vue';
 
 const router = useRouter();
 const posts = ref<PostSummary[]>([]);

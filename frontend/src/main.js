@@ -4,7 +4,7 @@ import App from './App.vue'
 
 // Vuetify
 import { createVuetify } from 'vuetify'
-import { VApp, VRow, VCol, VTextarea, VAppBar, VAppBarNavIcon, VAppBarTitle, VList, VListItem, VNavigationDrawer, VSnackbar, VDialog, VOtpInput, VBtn, VProgressCircular, VContainer, VTextField, VSwitch, VSpacer } from 'vuetify/components'
+import { VApp, VRow, VCol, VTextarea, VAppBar, VForm, VAppBarNavIcon, VAppBarTitle, VList, VListItem, VNavigationDrawer, VSnackbar, VDialog, VOtpInput, VBtn, VProgressCircular, VContainer, VTextField, VSwitch, VSpacer } from 'vuetify/components'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
 // Styles
@@ -17,7 +17,7 @@ import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
 
 const vuetify = createVuetify({
-  components: { VApp, VRow, VCol, VTextarea, VAppBar, VAppBarNavIcon, VAppBarTitle, VList, VListItem, VNavigationDrawer, VSnackbar, VDialog, VOtpInput, VBtn, VProgressCircular, VContainer, VTextField, VSwitch, VSpacer },
+  components: { VApp, VRow, VCol, VTextarea, VForm, VAppBar, VAppBarNavIcon, VAppBarTitle, VList, VListItem, VNavigationDrawer, VSnackbar, VDialog, VOtpInput, VBtn, VProgressCircular, VContainer, VTextField, VSwitch, VSpacer },
   defaults: {
     VBtn: {
       color: 'primary',
