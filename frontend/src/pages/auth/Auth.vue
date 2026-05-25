@@ -93,10 +93,6 @@
       </div>
     </div>
   </v-dialog>
-
-  <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="bottom">
-    <div class="text-center w-100">{{ snackbar.message }}</div>
-  </v-snackbar>
 </template>
 
 <script setup lang="ts">
@@ -104,6 +100,7 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { LoginRequest } from './types/login-request'
 import { RegisterRequest } from './types/register-request'
+import { showSnackBar } from '../../components/subjects/snack-bar-subject'
 
 const route = useRoute()
 const router = useRouter()
@@ -125,14 +122,6 @@ const otpCode = ref('')
 const otpError = ref(false)
 const verifying = ref(false)
 
-const snackbar = reactive({ show: false, message: '', color: 'success' as 'success' | 'error' })
-
-function toast(message: string, color: 'success' | 'error' = 'success') {
-  snackbar.message = message
-  snackbar.color = color
-  snackbar.show = true
-}
-
 function cancelOtp() {
   showOtpDialog.value = false
   otpCode.value = ''
@@ -149,16 +138,16 @@ async function handleLogin() {
       body: JSON.stringify(body),
     })
 
-    if (res.status === 401) { toast('Invalid email or password.', 'error'); return }
+    if (res.status === 401) { showSnackBar('Invalid email or password.', 'error'); return }
     if (res.status === 403) {
       const msg = await res.text()
-      toast(msg.toLowerCase().includes('locked')
+      showSnackBar(msg.toLowerCase().includes('locked')
         ? 'Account locked. Check your email for an unlock link.'
         : 'Please verify your email before signing in.',
         'error')
       return
     }
-    if (!res.ok) { toast('Sign in failed.', 'error'); return }
+    if (!res.ok) { showSnackBar('Sign in failed.', 'error'); return }
 
     const data = await res.json()
     if (data.otp_required) {
@@ -167,11 +156,11 @@ async function handleLogin() {
       showOtpDialog.value = true
     } else {
       localStorage.setItem('logged_in', '1')
-      toast('Signed in!')
+      showSnackBar('Signed in!')
       router.push('/')
     }
   } catch {
-    toast('Network error', 'error')
+    showSnackBar('Network error', 'error')
   }
 }
 
@@ -191,17 +180,17 @@ async function handleVerifyOtp() {
     if (res.status === 401) {
       otpError.value = true
       otpCode.value = ''
-      toast('Invalid or expired code', 'error')
+      showSnackBar('Invalid or expired code', 'error')
       return
     }
-    if (!res.ok) { toast('Verification failed', 'error'); return }
+    if (!res.ok) { showSnackBar('Verification failed', 'error'); return }
 
     showOtpDialog.value = false
     localStorage.setItem('logged_in', '1')
-    toast('Signed in!')
+    showSnackBar('Signed in!')
     router.push('/')
   } catch {
-    toast('Network error', 'error')
+    showSnackBar('Network error', 'error')
   } finally {
     verifying.value = false
   }
@@ -209,7 +198,7 @@ async function handleVerifyOtp() {
 
 function handleRegister() {
   if (register.password !== register.confirm) {
-    toast('Passwords do not match', 'error')
+    showSnackBar('Passwords do not match', 'error')
     return
   }
   const body: RegisterRequest = new RegisterRequest(register.email, register.password)
@@ -220,15 +209,15 @@ function handleRegister() {
   })
     .then(response => {
       if (response.ok) {
-        toast('Account created! Check your email to verify your address.')
+        showSnackBar('Account created! Check your email to verify your address.')
         router.push('/login')
       } else if (response.status === 409) {
-        toast('Email already registered', 'error')
+        showSnackBar('Email already registered', 'error')
       } else {
-        toast('Registration failed', 'error')
+        showSnackBar('Registration failed', 'error')
       }
     })
-    .catch(() => toast('Network error', 'error'))
+    .catch(() => showSnackBar('Network error', 'error'))
 }
 </script>
 

@@ -15,6 +15,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    email_list (id) {
+        id -> Uuid,
+        email -> Varchar,
+        verified -> Bool,
+        verification_public_key -> Nullable<Varchar>,
+        unsubscribe_public_key -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     failed_login_attempts (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -77,6 +88,7 @@ diesel::joinable!(post_comments -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     blog_posts,
+    email_list,
     failed_login_attempts,
     otp_codes,
     password_history,
