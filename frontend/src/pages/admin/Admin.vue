@@ -143,6 +143,7 @@ async function mountEditor(initialContent = '') {
   await nextTick()
   if (!editorEl.value) return
   destroyEditor()
+  editorEl.value.innerHTML = ''
   editorInstance = new StacksEditor(editorEl.value, initialContent, {
     defaultView: EditorType.RichText,
   })
