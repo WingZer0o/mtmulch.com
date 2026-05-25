@@ -14,14 +14,21 @@ pub async fn get_post(
 
     let post = web::block(move || {
         let mut conn = pool.get().expect("db pool exhausted");
-        blog_posts::table
+
+        let post = blog_posts::table
             .filter(blog_posts::slug.eq(&slug).and(blog_posts::published.eq(true)))
             .select(BlogPost::as_select())
-            .first::<BlogPost>(&mut conn)
+            .first::<BlogPost>(&mut conn)?;
+
+        diesel::update(blog_posts::table.find(post.id))
+            .set(blog_posts::views.eq(blog_posts::views + 1))
+            .execute(&mut conn)?;
+
+        Ok(post)
     })
     .await
     .map_err(|_| actix_web::error::ErrorInternalServerError("Server error"))?
-    .map_err(|e| match e {
+    .map_err(|e: diesel::result::Error| match e {
         diesel::result::Error::NotFound => actix_web::error::ErrorNotFound("Post not found"),
         _ => actix_web::error::ErrorInternalServerError("Database error"),
     })?;

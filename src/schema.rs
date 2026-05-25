@@ -10,6 +10,7 @@ diesel::table! {
         author_id -> Uuid,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
+        views -> Int8,
     }
 }
 

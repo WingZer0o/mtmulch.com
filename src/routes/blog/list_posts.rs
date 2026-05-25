@@ -15,6 +15,7 @@ struct PostSummary {
     published: bool,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    views: i64
 }
 
 #[get("/posts")]
@@ -30,6 +31,7 @@ pub async fn get_list_posts(pool: web::Data<DbPool>) -> Result<HttpResponse, act
                 blog_posts::published,
                 blog_posts::created_at,
                 blog_posts::updated_at,
+                blog_posts::views
             ))
             .order(blog_posts::created_at.desc())
             .load::<PostSummary>(&mut conn)

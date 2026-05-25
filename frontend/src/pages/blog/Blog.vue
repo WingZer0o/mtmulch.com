@@ -17,6 +17,7 @@
         @click="router.push(`/blog/${post.slug}`)">
         <v-col col="4">
           <h2 class="post-title">{{ post.title }}</h2>
+          <p><b>Views:</b> {{ post.views }}</p>
           <p class="post-date"><b>Created:</b> {{ formatDate(post.created_at) }}</p>
           <p class="post-date"><b>Updated:</b> {{ formatDate(post.updated_at) }}</p>
         </v-col>
@@ -29,10 +30,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-const router = useRouter()
-const posts = ref([])
-const loading = ref(true)
-const error = ref(null)
+const router = useRouter();
+const posts = ref([]);
+const loading = ref(true);
+const error = ref(null);
 
 onMounted(async () => {
   try {
