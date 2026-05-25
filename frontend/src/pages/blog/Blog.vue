@@ -1,8 +1,13 @@
 <template>
   <v-container class="blog-container" max-width="900">
-    <h1 class="text-center blog-title">Blog</h1>
-
     <div>
+      <h1 class="text-center blog-title">Blog</h1>
+      <p class="blog-subscribe-text">
+        Like my posts? You can subscribe to get updates when I publish new content.
+        Also, you can unsubscribe at any time if you change your mind.
+        You must provide proof of ownership of the email address to subscribe or unsubscribe,
+        so no one can abuse the system to subscribe/unsubscribe other people's emails.
+      </p>
       <BlogSubscriberForm />
     </div>
 
@@ -15,10 +20,7 @@
     <div v-else-if="posts.length === 0" class="empty-msg">No posts yet.</div>
 
     <div v-else class="posts-list">
-      <v-row v-for="post in posts"
-        :key="post.id"
-        class="post-card"
-        @click="router.push(`/blog/${post.slug}`)">
+      <v-row v-for="post in posts" :key="post.id" class="post-card" @click="router.push(`/blog/${post.slug}`)">
         <v-col col="4">
           <h2 class="post-title">{{ post.title }}</h2>
           <p><b>Views:</b> {{ post.views }}</p>
@@ -56,6 +58,14 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.blog-subscriber-form {
+  padding-bottom: 2rem;
+}
+
+.blog-subscribe-text {
+  padding-bottom: 2rem;
+}
+
 .blog-container {
   padding-top: 5rem;
   padding-bottom: 4rem;
@@ -85,6 +95,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding-top: 1rem;
 }
 
 .post-card {
@@ -93,7 +104,7 @@ onMounted(async () => {
   border-radius: 8px;
   padding: 1.5rem;
   cursor: pointer;
-  width: 275px;
+  width: 100%;
   transition: border-color 0.2s;
 }
 
