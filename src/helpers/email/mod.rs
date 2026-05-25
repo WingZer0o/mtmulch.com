@@ -46,6 +46,21 @@ pub fn send_account_locked_email(api_key: &str, to_email: &str, link: &str) -> R
     resend_post(api_key, &body)
 }
 
+pub fn send_new_blog_post_email(api_key: &str, to_email: &str, title: &str, link: &str) -> Result<(), String> {
+    let body = json!({
+        "from": "noreply@mtmulch.com",
+        "to": [to_email],
+        "subject": format!("New post: {}", title),
+        "html": format!(
+            "<p>A new blog post has been published: <strong>{title}</strong></p>\
+             <p><a href=\"{link}\">Read it here</a></p>\
+             <p>You're receiving this because you subscribed to blog updates.</p>"
+        ),
+    });
+
+    resend_post(api_key, &body)
+}
+
 pub fn send_blog_verification_email(api_key: &str, to_email: &str, link: &str) -> Result<(), String> {
     let body = json!({
         "from": "noreply@mtmulch.com",
