@@ -141,78 +141,85 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { LoginRequest } from './types/login-request'
-import { RegisterRequest } from './types/register-request'
-import { showSnackBar } from '../../components/subjects/snack-bar-subject'
+import { reactive, ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { LoginRequest } from './types/login-request';
+import { RegisterRequest } from './types/register-request';
+import { showSnackBar } from '../../components/subjects/snack-bar-subject';
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const view = computed(() => route.path === '/register' ? 'register' : 'login')
-const verifiedBanner = ref(false)
-const unlockedBanner = ref(false)
+const view = computed(() => route.path === '/register' ? 'register' : 'login');
+const verifiedBanner = ref(false);
+const unlockedBanner = ref(false);
 
 onMounted(() => {
-  if (route.query.verified === '1') verifiedBanner.value = true
-  if (route.query.unlocked === '1') unlockedBanner.value = true
+  if (route.query.verified === '1') verifiedBanner.value = true;
+  if (route.query.unlocked === '1') unlockedBanner.value = true;
 })
 
-const login = reactive({ email: '', password: '' })
-const register = reactive({ email: '', password: '', confirm: '' })
+const login = reactive({ email: '', password: '' });
+const register = reactive({ email: '', password: '', confirm: '' });
 
-const showOtpDialog = ref(false)
-const otpCode = ref('')
-const otpError = ref(false)
-const verifying = ref(false)
+const showOtpDialog = ref(false);
+const otpCode = ref('');
+const otpError = ref(false);
+const verifying = ref(false);
 
 function cancelOtp() {
-  showOtpDialog.value = false
-  otpCode.value = ''
-  otpError.value = false
+  showOtpDialog.value = false;
+  otpCode.value = '';
+  otpError.value = false;
 }
 
 async function handleLogin() {
-  const body: LoginRequest = new LoginRequest(login.email, login.password)
+  const body: LoginRequest = new LoginRequest(login.email, login.password);
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(body),
-    })
+    });
 
-    if (res.status === 401) { showSnackBar('Invalid email or password.', 'error'); return }
+    if (res.status === 401) { 
+      showSnackBar('Invalid email or password.', 'error'); 
+      return; 
+    }
     if (res.status === 403) {
-      const msg = await res.text()
+      const msg = await res.text();
       showSnackBar(msg.toLowerCase().includes('locked')
         ? 'Account locked. Check your email for an unlock link.'
         : 'Please verify your email before signing in.',
         'error')
-      return
+      return;
     }
-    if (!res.ok) { showSnackBar('Sign in failed.', 'error'); return }
+    if (!res.ok) { 
+      showSnackBar('Sign in failed.', 'error'); 
+      return;
+    }
 
-    const data = await res.json()
+    const data = await res.json();
     if (data.otp_required) {
-      otpCode.value = ''
-      otpError.value = false
-      showOtpDialog.value = true
+      otpCode.value = '';
+      otpError.value = false;
+      showOtpDialog.value = true;
     } else {
-      localStorage.setItem('logged_in', '1')
-      showSnackBar('Signed in!')
-      router.push('/')
+      localStorage.setItem('logged_in', '1');
+      showSnackBar('Signed in!');
+      router.push('/');
     }
   } catch {
-    showSnackBar('Network error', 'error')
+    showSnackBar('Network error', 'error');
   }
 }
 
 async function handleVerifyOtp() {
-  if (otpCode.value.length < 6 || verifying.value) return
-  verifying.value = true
-  otpError.value = false
+  if (otpCode.value.length < 6 || verifying.value) 
+    return;
+  verifying.value = true;
+  otpError.value = false;
 
   try {
     const res = await fetch('/api/auth/verify-otp', {
@@ -220,31 +227,31 @@ async function handleVerifyOtp() {
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ email: login.email, code: otpCode.value }),
-    })
+    });
 
     if (res.status === 401) {
-      otpError.value = true
-      otpCode.value = ''
-      showSnackBar('Invalid or expired code', 'error')
-      return
+      otpError.value = true;
+      otpCode.value = '';
+      showSnackBar('Invalid or expired code', 'error');
+      return;
     }
-    if (!res.ok) { showSnackBar('Verification failed', 'error'); return }
+    if (!res.ok) { showSnackBar('Verification failed', 'error'); return; }
 
-    showOtpDialog.value = false
-    localStorage.setItem('logged_in', '1')
-    showSnackBar('Signed in!')
-    router.push('/')
+    showOtpDialog.value = false;
+    localStorage.setItem('logged_in', '1');
+    showSnackBar('Signed in!');
+    router.push('/');
   } catch {
-    showSnackBar('Network error', 'error')
+    showSnackBar('Network error', 'error');
   } finally {
-    verifying.value = false
+    verifying.value = false;
   }
 }
 
 function handleRegister() {
   if (register.password !== register.confirm) {
-    showSnackBar('Passwords do not match', 'error')
-    return
+    showSnackBar('Passwords do not match', 'error');
+    return;
   }
   const body: RegisterRequest = new RegisterRequest(register.email, register.password)
   fetch('/api/auth/register', {
