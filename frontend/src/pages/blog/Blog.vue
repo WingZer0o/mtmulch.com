@@ -18,44 +18,36 @@
         <v-col col="4">
           <h2 class="post-title">{{ post.title }}</h2>
           <p><b>Views:</b> {{ post.views }}</p>
-          <p class="post-date"><b>Created:</b> {{ formatDate(post.created_at) }}</p>
-          <p class="post-date"><b>Updated:</b> {{ formatDate(post.updated_at) }}</p>
+          <p class="post-date"><b>Created:</b> {{ formatUtcDateForDisplay(post.created_at) }}</p>
+          <p class="post-date"><b>Updated:</b> {{ formatUtcDateForDisplay(post.updated_at) }}</p>
         </v-col>
       </v-row>
     </div>
   </v-container>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { PostSummary } from './interfaces/blog';
+import { formatUtcDateForDisplay } from './../../helpers/utilities/date-time';
 
 const router = useRouter();
-const posts = ref([]);
+const posts = ref<PostSummary[]>([]);
 const loading = ref(true);
-const error = ref(null);
+const error = ref<string | null>(null);
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/blog/posts')
-    if (!res.ok) throw new Error('Failed to load posts')
-    posts.value = await res.json()
-  } catch (e) {
-    error.value = e.message
+    const res = await fetch('/api/blog/posts');
+    if (!res.ok) throw new Error('Failed to load posts');
+    posts.value = await res.json();
+  } catch (e: any) {
+    error.value = e.message;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 })
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 </script>
 
 <style scoped>

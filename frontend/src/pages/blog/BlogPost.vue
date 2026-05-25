@@ -10,7 +10,7 @@
       <article class="post-article">
         <p class="back-link" @click="router.push('/blog')">← Back to blog</p>
         <h1 class="post-title">{{ post.title }}</h1>
-        <p class="post-date">{{ formatDate(post.created_at) }}</p>
+        <p class="post-date">{{ formatUtcDateForDisplay(post.created_at) }}</p>
         <div class="post-content" v-html="renderedContent"></div>
       </article>
 
@@ -29,7 +29,7 @@
           <div v-for="c in comments" :key="c.id" class="comment-card">
             <div class="comment-meta">
               <span class="comment-author">{{ maskEmail(c.author_email) }}</span>
-              <span class="comment-date">{{ formatDate(c.created_at) }}</span>
+              <span class="comment-date">{{ formatUtcDateForDisplay(c.created_at) }}</span>
             </div>
             <p class="comment-body">{{ c.content }}</p>
           </div>
@@ -76,92 +76,95 @@ import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import hljs from 'highlight.js/lib/common'
 import 'highlight.js/styles/github-dark-dimmed.css'
+import { formatUtcDateForDisplay } from '../../helpers/utilities/date-time'
 
 marked.use({
   gfm: true,
   breaks: true
 })
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const post = ref(null)
-const loading = ref(true)
-const error = ref(null)
+const post = ref(null);
+const loading = ref(true);
+const error = ref(null);
 
-const comments = ref([])
-const commentsLoading = ref(true)
+const comments = ref([]);
+const commentsLoading = ref(true);
 
-const newComment = ref('')
-const submitting = ref(false)
-const submitError = ref(null)
+const newComment = ref('');
+const submitting = ref(false);
+const submitError = ref(null);
 
-const isLoggedIn = computed(() => localStorage.getItem('logged_in') === '1')
-const renderedContent = computed(() => marked.parse(post.value?.content ?? ''))
+const isLoggedIn = computed(() => localStorage.getItem('logged_in') === '1');
+const renderedContent = computed(() => marked.parse(post.value?.content ?? ''));
 
 onMounted(async () => {
-  await loadPost()
+  await loadPost();
 })
 
 async function loadPost() {
   try {
-    const res = await fetch(`/api/blog/posts/${route.params.slug}`)
-    if (res.status === 404) throw new Error('Post not found')
-    if (!res.ok) throw new Error('Failed to load post')
-    post.value = await res.json()
-    loadComments()
+    loading.value = true;
+    commentsLoading.value = true;
+    const postRespose = fetch(`/api/blog/posts/${route.params.slug}`);
+    const commentsResponse = fetch(`/api/blog/posts/${route.params.slug}/comments`);
+    await Promise.all([postRespose, commentsResponse]).then(async ([postRespose, commentsResponse]) => {
+      if (postRespose.status === 404) throw new Error('Post not found');
+      if (!postRespose.ok) throw new Error('Failed to load post');
+      post.value = await postRespose.json();
+      if (commentsResponse.ok) {
+        comments.value = await commentsResponse.json();
+      }
+    });
   } catch (e) {
-    error.value = e.message
+    error.value = e.message;
   } finally {
-    loading.value = false
+    loading.value = false;
+    commentsLoading.value = false;
   }
-  await nextTick()
-  hljs.highlightAll()
+  await nextTick();
+  hljs.highlightAll();
 }
 
 async function loadComments() {
-  commentsLoading.value = true
   try {
-    const res = await fetch(`/api/blog/posts/${route.params.slug}/comments`)
-    if (res.ok) comments.value = await res.json()
+    commentsLoading.value = true;
+    const res = await fetch(`/api/blog/posts/${route.params.slug}/comments`);
+    if (res.ok) {
+      comments.value = await res.json();
+    }
   } finally {
-    commentsLoading.value = false
+    commentsLoading.value = false;
   }
 }
 
 async function submitComment() {
-  submitError.value = null
-  submitting.value = true
+  submitError.value = null;
+  submitting.value = true;
   try {
     const res = await fetch(`/api/blog/posts/${route.params.slug}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ content: newComment.value.trim() }),
-    })
+    });
     if (res.status === 401) {
-      submitError.value = 'Session expired. Please log in again.'
-      return
+      submitError.value = 'Session expired. Please log in again.';
+      return;
     }
     if (!res.ok) {
-      submitError.value = 'Failed to post comment. Please try again.'
-      return
+      submitError.value = 'Failed to post comment. Please try again.';
+      return;
     }
-    newComment.value = ''
-    await loadComments()
+    newComment.value = '';
+    await loadComments();
   } catch {
-    submitError.value = 'Network error. Please try again.'
+    submitError.value = 'Network error. Please try again.';
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
 }
 
 function maskEmail(email) {
