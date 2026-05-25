@@ -31,6 +31,7 @@ import { ref } from 'vue';
 import { isValidEmail } from '../../../helpers/utilities/regex';
 import type { Ref } from 'vue';
 import { apiFetch } from '../../../api';
+import { showSnackBar } from '../../../components/subjects/snack-bar-subject';
 
 const subscribeEmail: Ref<string, string> = ref('');
 const unsubscribeEmail: Ref<string, string> = ref('');
@@ -60,8 +61,9 @@ const handleUnsubscribeClick = async () => {
             throw new Error('Unsubscription failed');
         }
         unsubscribeEmail.value = '';
+        showSnackBar('Check your email to confirm unsubscription.', 'success');
     } catch (e: any) {
-        alert(e.message);
+        showSnackBar(e.message, 'error');
     }
 }
 
@@ -80,8 +82,9 @@ const handleSubscribeClick = async () => {
             throw new Error('Subscription failed');
         }
         subscribeEmail.value = '';
+        showSnackBar('Check your email to confirm your subscription.', 'success');
     } catch (e: any) {
-        alert(e.message);
+        showSnackBar(e.message, 'error');
     }
 }
 </script>

@@ -34,17 +34,27 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { PostSummary } from './interfaces/blog';
 import { formatUtcDateForDisplay } from './../../helpers/utilities/date-time';
 import BlogSubscriberForm from './components/BlogSubscriberForm.vue';
+import { showSnackBar } from '../../components/subjects/snack-bar-subject';
 
+const route = useRoute();
 const router = useRouter();
 const posts = ref<PostSummary[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
 onMounted(async () => {
+  if (route.query.subscribed === '1') {
+    showSnackBar('Your subscription has been confirmed!', 'success');
+    router.replace({ path: '/blog' });
+  } else if (route.query.unsubscribed === '1') {
+    showSnackBar('You have been unsubscribed.', 'success');
+    router.replace({ path: '/blog' });
+  }
+
   try {
     const res = await fetch('/api/blog/posts');
     if (!res.ok) throw new Error('Failed to load posts');

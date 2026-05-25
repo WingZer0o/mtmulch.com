@@ -46,6 +46,36 @@ pub fn send_account_locked_email(api_key: &str, to_email: &str, link: &str) -> R
     resend_post(api_key, &body)
 }
 
+pub fn send_blog_verification_email(api_key: &str, to_email: &str, link: &str) -> Result<(), String> {
+    let body = json!({
+        "from": "noreply@mtmulch.com",
+        "to": [to_email],
+        "subject": "Confirm your blog subscription",
+        "html": format!(
+            "<p>Thanks for subscribing! Please confirm your email address by clicking the link below.</p>\
+             <p><a href=\"{link}\">Confirm subscription</a></p>\
+             <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>"
+        ),
+    });
+
+    resend_post(api_key, &body)
+}
+
+pub fn send_blog_unsubscribe_email(api_key: &str, to_email: &str, link: &str) -> Result<(), String> {
+    let body = json!({
+        "from": "noreply@mtmulch.com",
+        "to": [to_email],
+        "subject": "Confirm your blog unsubscription",
+        "html": format!(
+            "<p>We received a request to unsubscribe this address from the blog.</p>\
+             <p><a href=\"{link}\">Confirm unsubscribe</a></p>\
+             <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>"
+        ),
+    });
+
+    resend_post(api_key, &body)
+}
+
 fn resend_post(api_key: &str, body: &serde_json::Value) -> Result<(), String> {
     match ureq::post("https://api.resend.com/emails")
         .set("Authorization", &format!("Bearer {}", api_key))
