@@ -1,6 +1,6 @@
 <template>
   <v-container class="blog-container" max-width="900">
-    <h1 class="blog-title">Blog</h1>
+    <h1 class="text-center blog-title">Blog</h1>
 
     <div v-if="loading" class="loading-wrap">
       <v-progress-circular indeterminate color="var(--accent)" />
@@ -92,6 +92,7 @@ function formatDate(iso) {
   border-radius: 8px;
   padding: 1.5rem;
   cursor: pointer;
+  width: 275px;
   transition: border-color 0.2s;
 }
 
