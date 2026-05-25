@@ -30,9 +30,10 @@
 
 <script setup>
 const skills = [
-  'Rust', 'Actix-web', 'Diesel',
+  'C#', 'Angular', 'Firebase', 'SQL Server', 'TypeScript', 'JavaScript',
+  'Rust', 'Actix-Web', 'Diesel',
   'PostgreSQL', 'Docker', 'Vue.js',
-  'GitHub Actions', 'Azure',
+  'GitHub Actions', 'Azure', 'Entity Framework'
 ]
 </script>
 
