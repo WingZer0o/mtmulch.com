@@ -36,7 +36,6 @@ import { useRouter } from 'vue-router'
 import { PostSummary } from './interfaces/blog';
 import { formatUtcDateForDisplay } from './../../helpers/utilities/date-time';
 import BlogSubscriberForm from './components/BlogSubscriberForm.vue';
-import BlogSubscriberForm from './components/BlogSubscriberForm.vue';
 
 const router = useRouter();
 const posts = ref<PostSummary[]>([]);
