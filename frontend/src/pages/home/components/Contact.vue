@@ -69,7 +69,7 @@ p {
 }
 
 .btn-primary:hover {
-  background: rgba(124, 106, 247, 0.1);
+  background: rgba(0, 217, 126, 0.1);
   color: var(--accent);
 }
 
