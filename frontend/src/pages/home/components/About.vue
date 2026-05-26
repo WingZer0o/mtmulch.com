@@ -33,7 +33,7 @@ const skills = [
   'C#', 'Angular', 'Firebase', 'SQL Server', 'TypeScript', 'JavaScript',
   'Rust', 'Actix-Web', 'Diesel',
   'PostgreSQL', 'Docker', 'Vue.js',
-  'GitHub Actions', 'Azure', 'Entity Framework'
+  'GitHub Actions', 'Azure', 'Entity Framework', 'Node.js', 'Redis', 'Next.js'
 ]
 </script>
 
