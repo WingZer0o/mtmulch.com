@@ -6,6 +6,8 @@ services:
     volumes:
       - .:/app
       - cargo-registry:/usr/local/cargo/registry
+      - cargo-git:/usr/local/cargo/git
+      - cargo-target:/app/target
     ports:
       - "8080:8080"
       - "1234:1234"
@@ -57,6 +59,8 @@ services:
 
 volumes:
   cargo-registry:
+  cargo-git:
+  cargo-target:
 
 networks:
   app-net:
