@@ -9,7 +9,6 @@
         with a focus on performance and correctness.
       </p>
       <div class="actions">
-        <a href="#projects" class="btn-primary">View my work</a>
         <a href="#contact" class="btn-ghost">Get in touch</a>
         <RouterLink to="/blog" class="btn-ghost">Read my blog</RouterLink>
       </div>
@@ -23,10 +22,30 @@ import { RouterLink } from 'vue-router'
 
 <style scoped>
 section {
-  min-height: 100vh;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 2;
   display: flex;
   align-items: center;
   padding-top: 60px;
+  background-image: url('./../../../assets/hero.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #0a0f0a;
+}
+
+section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
 }
 
 .greeting {
@@ -41,19 +60,22 @@ h1 {
   font-weight: 700;
   line-height: 1.1;
   margin-bottom: 0.5rem;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
 h2 {
   font-size: clamp(1.5rem, 4vw, 3rem);
   font-weight: 700;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.7);
   line-height: 1.1;
   margin-bottom: 1.5rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .bio {
   max-width: 540px;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.65);
   margin-bottom: 2.5rem;
 }
 
@@ -78,7 +100,7 @@ h2 {
 }
 
 .btn-ghost:hover {
-  background: rgba(124, 106, 247, 0.1);
+  background: rgba(0, 217, 126, 0.1);
   color: var(--accent);
 }
 

@@ -8,8 +8,8 @@
   --bg: #ffffff;
   --bg-card: #f5f6fa;
   --border: #dde1ef;
-  --accent: #7c6af7;
-  --accent-hover: #5a4fd4;
+  --accent: #00d97e;
+  --accent-hover: #00b868;
   --text: #1a1a2e;
   --text-muted: #64748b;
   --mono: 'JetBrains Mono', monospace;
@@ -19,8 +19,8 @@
   --bg: #0f1117;
   --bg-card: #1a1d27;
   --border: #2a2d3e;
-  --accent: #7c6af7;
-  --accent-hover: #9585f8;
+  --accent: #00d97e;
+  --accent-hover: #33e89b;
   --text: #e2e8f0;
   --text-muted: #8892a4;
 }
@@ -77,14 +77,14 @@ section {
 
 @keyframes typewriter-blink {
   from, to { border-right-color: transparent; }
-  50% { border-right-color: var(--accent, #7c6af7); }
+  50% { border-right-color: var(--accent, #00d97e); }
 }
 
 .typewriter {
   display: inline-block;
   overflow: hidden;
   white-space: nowrap;
-  border-right: 3px solid var(--accent, #7c6af7);
+  border-right: 3px solid var(--accent, #00d97e);
   animation:
     typewriter-type var(--tw-duration, 2s) steps(var(--tw-chars, 15), end) forwards,
     typewriter-blink 0.75s step-end infinite;
