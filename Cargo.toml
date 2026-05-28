@@ -21,3 +21,5 @@ serde_json = "1"
 ureq = { version = "2", features = ["json"] }
 url = "2"
 ed25519-dalek = "2"
+actix-multipart = "0.7"
+base64 = "0.22"

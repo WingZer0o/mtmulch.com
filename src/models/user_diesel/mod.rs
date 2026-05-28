@@ -16,6 +16,8 @@ pub struct User {
     pub is_admin: bool,
     pub is_locked: bool,
     pub unlock_public_key: Option<String>,
+    pub profile_image: Option<Vec<u8>>,
+    pub profile_image_content_type: Option<String>,
 }
 
 #[derive(Insertable)]

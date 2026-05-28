@@ -76,6 +76,8 @@ diesel::table! {
         is_admin -> Bool,
         is_locked -> Bool,
         unlock_public_key -> Nullable<Varchar>,
+        profile_image -> Nullable<Bytea>,
+        profile_image_content_type -> Nullable<Varchar>,
     }
 }
 

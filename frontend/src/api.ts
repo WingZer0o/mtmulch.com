@@ -1,5 +1,6 @@
 import router from './router'
 import { SESSION_COOKIE_NAME, ADMIN_COOKIE_NAME } from './helpers/auth/cookies';
+import { setProfileImage } from './components/subjects/profile-image-subject';
 
 export const apiFetch = async (input: RequestInfo, init?: RequestInit): Promise<Response> => {
   const res = await fetch(input, { ...init, credentials: 'include' });
@@ -23,6 +24,7 @@ const unauthorizedHandler = async () => {
 export const logOut = async () => {
   clearAuthCookies();
   localStorage.removeItem('logged_in');
+  setProfileImage(null);
   try {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
   } catch { /* best-effort */ }

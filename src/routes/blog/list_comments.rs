@@ -7,13 +7,14 @@ use uuid::Uuid;
 use crate::db::DbPool;
 use crate::schema::{blog_posts, post_comments, users};
 
-#[derive(Serialize, Queryable)]
+#[derive(Queryable, Serialize)]
 struct CommentResponse {
     id: Uuid,
     user_id: Uuid,
     author_email: String,
     content: String,
     created_at: DateTime<Utc>,
+    has_profile_image: bool,
 }
 
 #[get("/posts/{slug}/comments")]
@@ -40,6 +41,7 @@ pub async fn list_comments(
                 users::email,
                 post_comments::content,
                 post_comments::created_at,
+                users::profile_image.is_not_null(),
             ))
             .order(post_comments::created_at.asc())
             .load::<CommentResponse>(&mut conn)

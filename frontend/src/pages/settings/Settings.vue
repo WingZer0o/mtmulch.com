@@ -10,7 +10,40 @@
       <template v-else>
         <p class="user-email">{{ email }}</p>
 
+        <!-- Profile Image -->
         <div class="section">
+          <h2>Profile Image</h2>
+          <div class="avatar-section">
+            <div class="avatar-preview">
+              <img v-if="profileImage" :src="profileImage" alt="Profile" class="avatar-img" />
+              <div v-else class="avatar-placeholder">
+                <span>{{ email.charAt(0).toUpperCase() }}</span>
+              </div>
+            </div>
+            <div class="avatar-actions">
+              <input
+                ref="fileInput"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                style="display:none"
+                @change="handleFileSelect"
+              />
+              <button class="btn-primary" :disabled="uploading" @click="fileInput.click()">
+                {{ uploading ? 'Uploading…' : (profileImage ? 'Change photo' : 'Upload photo') }}
+              </button>
+              <button
+                v-if="profileImage"
+                class="btn-ghost"
+                :disabled="uploading"
+                @click="handleRemoveImage"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section section-border">
           <h2>Security</h2>
 
           <div class="toggle-row">
@@ -82,21 +115,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useSubject } from '@vueuse/rxjs';
 import { apiFetch } from '../../api'
-import {showSnackBar} from "../../components/subjects/snack-bar-subject";
+import { showSnackBar } from '../../components/subjects/snack-bar-subject'
+import { profileImageSubject, setProfileImage } from '../../components/subjects/profile-image-subject'
 
 const email = ref('')
 const otpEnabled = ref(false)
 const loading = ref(true)
 const fetchError = ref('')
 const saving = ref(false)
+const uploading = ref(false)
+const profileImage = useSubject(profileImageSubject);
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const pw = reactive({ current: '', next: '', confirm: '' })
 const pwSaving = ref(false)
 
+let imageSub: { unsubscribe: () => void } | null = null
 
 onMounted(async () => {
+  imageSub = profileImageSubject.subscribe(url => {
+    profileImage.value = url
+  })
+
   try {
     const res = await apiFetch('/api/settings', { credentials: 'include' })
     if (res.status === 401) return
@@ -104,12 +147,67 @@ onMounted(async () => {
     const data = await res.json()
     email.value = data.email
     otpEnabled.value = data.otp_enabled
+    if (data.profile_image !== undefined) {
+      setProfileImage(data.profile_image ?? null)
+    }
   } catch {
     fetchError.value = 'Failed to load settings.'
   } finally {
     loading.value = false
   }
 })
+
+onUnmounted(() => {
+  imageSub?.unsubscribe()
+})
+
+async function handleFileSelect(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  input.value = ''
+
+  uploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
+    const res = await apiFetch('/api/settings/profile-image', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    })
+    if (res.status === 400) {
+      const text = await res.text()
+      showSnackBar(text || 'Invalid file.', 'error')
+      return
+    }
+    if (!res.ok) { showSnackBar('Upload failed.', 'error'); return }
+    const data = await res.json()
+    setProfileImage(data.profile_image)
+    showSnackBar('Profile photo updated.')
+  } catch {
+    showSnackBar('Network error.', 'error')
+  } finally {
+    uploading.value = false
+  }
+}
+
+async function handleRemoveImage() {
+  uploading.value = true
+  try {
+    const res = await apiFetch('/api/settings/profile-image', {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+    if (!res.ok) { showSnackBar('Failed to remove photo.', 'error'); return }
+    setProfileImage(null)
+    showSnackBar('Profile photo removed.')
+  } catch {
+    showSnackBar('Network error.', 'error')
+  } finally {
+    uploading.value = false
+  }
+}
 
 async function handleToggle() {
   const newEnabled = !otpEnabled.value
@@ -228,6 +326,44 @@ h2 {
   border-top: 1px solid var(--border);
 }
 
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.avatar-preview {
+  flex-shrink: 0;
+}
+
+.avatar-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+
+.avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
 .toggle-row {
   display: flex;
   align-items: center;
@@ -333,17 +469,16 @@ h2 {
 }
 
 .btn-primary {
-  margin-top: 0.25rem;
   background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 0.65rem 1.25rem;
-  font-size: 0.95rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, opacity 0.15s;
-  align-self: flex-start;
+  font-family: inherit;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -351,6 +486,28 @@ h2 {
 }
 
 .btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.btn-ghost:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }

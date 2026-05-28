@@ -14,14 +14,25 @@ import { useRoute } from 'vue-router'
 import { useTheme } from 'vuetify'
 import NavBar from './components/NavBar.vue'
 import SnackBar from './components/SnackBar.vue'
+import { setProfileImage } from './components/subjects/profile-image-subject'
 
 const route = useRoute();
 const isFullWidth = computed(() => ['/', '/admin'].includes(route.path));
 
 const theme = useTheme();
-onMounted(() => {
+onMounted(async () => {
   const savedTheme = localStorage.getItem('theme');
   theme.change(savedTheme ?? 'dark');
+
+  if (localStorage.getItem('logged_in') === '1') {
+    try {
+      const res = await fetch('/api/settings', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setProfileImage(data.profile_image ?? null);
+      }
+    } catch { /* non-critical */ }
+  }
 })
 </script>
 

@@ -27,9 +27,15 @@
 
         <div v-else class="comment-list">
           <div v-for="c in comments" :key="c.id" class="comment-card">
-            <div class="comment-meta">
-              <span class="comment-author">{{ maskEmail(c.author_email) }}</span>
-              <span class="comment-date">{{ formatUtcDateForDisplay(c.created_at) }}</span>
+            <div class="comment-header">
+              <div class="comment-avatar">
+                <img v-if="commentImageMap[c.user_id]" :src="commentImageMap[c.user_id]" alt="" class="comment-avatar-img" />
+                <div v-else class="comment-avatar-initial">{{ c.author_email.charAt(0).toUpperCase() }}</div>
+              </div>
+              <div class="comment-meta">
+                <span class="comment-author">{{ maskEmail(c.author_email) }}</span>
+                <span class="comment-date">{{ formatUtcDateForDisplay(c.created_at) }}</span>
+              </div>
             </div>
             <p class="comment-body">{{ c.content }}</p>
           </div>
@@ -37,6 +43,12 @@
 
         <div v-if="isLoggedIn" class="comment-form">
           <h3 class="form-heading">Leave a comment</h3>
+          <div class="comment-form-author">
+            <div class="comment-avatar">
+              <img v-if="currentUserImage" :src="currentUserImage" alt="" class="comment-avatar-img" />
+              <div v-else class="comment-avatar-initial">U</div>
+            </div>
+          </div>
           <v-textarea
             v-model="newComment"
             rows="5"
@@ -71,12 +83,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import hljs from 'highlight.js/lib/common'
 import 'highlight.js/styles/github-dark-dimmed.css'
 import { formatUtcDateForDisplay } from '../../helpers/utilities/date-time'
+import { profileImageSubject } from '../../components/subjects/profile-image-subject'
 
 marked.use({
   gfm: true,
@@ -92,6 +105,7 @@ const error = ref(null);
 
 const comments = ref([]);
 const commentsLoading = ref(true);
+const commentImageMap = ref({});
 
 const newComment = ref('');
 const submitting = ref(false);
@@ -99,10 +113,41 @@ const submitError = ref(null);
 
 const isLoggedIn = computed(() => localStorage.getItem('logged_in') === '1');
 const renderedContent = computed(() => marked.parse(post.value?.content ?? ''));
+const currentUserImage = ref(null);
 
+let imageSub = null;
 onMounted(async () => {
+  imageSub = profileImageSubject.subscribe(url => {
+    currentUserImage.value = url;
+  });
   await loadPost();
 })
+onUnmounted(() => {
+  imageSub?.unsubscribe();
+})
+
+async function fetchCommentImages(commentList) {
+  const userIds = [...new Set(
+    commentList.filter(c => c.has_profile_image).map(c => c.user_id)
+  )];
+  const results = await Promise.all(
+    userIds.map(async id => {
+      try {
+        const res = await fetch(`/api/users/${id}/profile-image`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return [id, data.profile_image];
+      } catch {
+        return null;
+      }
+    })
+  );
+  const map = {};
+  for (const entry of results) {
+    if (entry) map[entry[0]] = entry[1];
+  }
+  commentImageMap.value = map;
+}
 
 async function loadPost() {
   try {
@@ -115,7 +160,9 @@ async function loadPost() {
       if (!postRespose.ok) throw new Error('Failed to load post');
       post.value = await postRespose.json();
       if (commentsResponse.ok) {
-        comments.value = await commentsResponse.json();
+        const commentList = await commentsResponse.json();
+        comments.value = commentList;
+        await fetchCommentImages(commentList);
       }
     });
   } catch (e) {
@@ -133,7 +180,9 @@ async function loadComments() {
     commentsLoading.value = true;
     const res = await fetch(`/api/blog/posts/${route.params.slug}/comments`);
     if (res.ok) {
-      comments.value = await res.json();
+      const commentList = await res.json();
+      comments.value = commentList;
+      await fetchCommentImages(commentList);
     }
   } finally {
     commentsLoading.value = false;
@@ -296,11 +345,47 @@ function maskEmail(email) {
   padding: 1rem 1.25rem;
 }
 
-.comment-meta {
+.comment-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+}
+
+.comment-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.comment-avatar-initial {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.comment-form-author {
+  margin-bottom: 0.75rem;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .comment-author {
