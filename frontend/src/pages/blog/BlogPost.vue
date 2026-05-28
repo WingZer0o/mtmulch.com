@@ -141,6 +141,7 @@ async function fetchCommentImages(commentList) {
     if (entry) map[entry[0]] = entry[1];
   }
   commentImageMap.value = map;
+  commentsLoading.value = false;
 }
 
 async function loadPost() {
@@ -156,14 +157,13 @@ async function loadPost() {
       if (commentsResponse.ok) {
         const commentList = await commentsResponse.json();
         comments.value = commentList;
-        await fetchCommentImages(commentList);
+        fetchCommentImages(commentList);
       }
     });
   } catch (e) {
     error.value = e.message;
   } finally {
     loading.value = false;
-    commentsLoading.value = false;
   }
   await nextTick();
   hljs.highlightAll();
