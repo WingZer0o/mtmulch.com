@@ -141,7 +141,6 @@ async function fetchCommentImages(commentList) {
     if (entry) map[entry[0]] = entry[1];
   }
   commentImageMap.value = map;
-  commentsLoading.value = false;
 }
 
 async function loadPost() {
@@ -164,6 +163,7 @@ async function loadPost() {
     error.value = e.message;
   } finally {
     loading.value = false;
+    commentsLoading.value = false;
   }
   await nextTick();
   hljs.highlightAll();
@@ -176,7 +176,7 @@ async function loadComments() {
     if (res.ok) {
       const commentList = await res.json();
       comments.value = commentList;
-      await fetchCommentImages(commentList);
+      fetchCommentImages(commentList);
     }
   } finally {
     commentsLoading.value = false;
