@@ -86,6 +86,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
+import { useSubject } from '@vueuse/rxjs';
 import hljs from 'highlight.js/lib/common'
 import 'highlight.js/styles/github-dark-dimmed.css'
 import { formatUtcDateForDisplay } from '../../helpers/utilities/date-time'
@@ -113,18 +114,11 @@ const submitError = ref(null);
 
 const isLoggedIn = computed(() => localStorage.getItem('logged_in') === '1');
 const renderedContent = computed(() => marked.parse(post.value?.content ?? ''));
-const currentUserImage = ref(null);
+const currentUserImage = useSubject(profileImageSubject);
 
-let imageSub = null;
 onMounted(async () => {
-  imageSub = profileImageSubject.subscribe(url => {
-    currentUserImage.value = url;
-  });
   await loadPost();
-})
-onUnmounted(() => {
-  imageSub?.unsubscribe();
-})
+});
 
 async function fetchCommentImages(commentList) {
   const userIds = [...new Set(
@@ -162,7 +156,7 @@ async function loadPost() {
       if (commentsResponse.ok) {
         const commentList = await commentsResponse.json();
         comments.value = commentList;
-        await fetchCommentImages(commentList);
+        fetchCommentImages(commentList);
       }
     });
   } catch (e) {
@@ -182,7 +176,7 @@ async function loadComments() {
     if (res.ok) {
       const commentList = await res.json();
       comments.value = commentList;
-      await fetchCommentImages(commentList);
+      fetchCommentImages(commentList);
     }
   } finally {
     commentsLoading.value = false;
