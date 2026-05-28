@@ -146,6 +146,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { LoginRequest } from './types/login-request';
 import { RegisterRequest } from './types/register-request';
 import { showSnackBar } from '../../components/subjects/snack-bar-subject';
+import { setProfileImage } from '../../components/subjects/profile-image-subject';
 
 const route = useRoute();
 const router = useRouter();
@@ -166,6 +167,16 @@ const showOtpDialog = ref(false);
 const otpCode = ref('');
 const otpError = ref(false);
 const verifying = ref(false);
+
+async function loadProfileImage() {
+  try {
+    const res = await fetch('/api/settings', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      setProfileImage(data.profile_image ?? null);
+    }
+  } catch { /* non-critical */ }
+}
 
 function cancelOtp() {
   showOtpDialog.value = false;
@@ -207,6 +218,7 @@ async function handleLogin() {
       showOtpDialog.value = true;
     } else {
       localStorage.setItem('logged_in', '1');
+      await loadProfileImage();
       showSnackBar('Signed in!');
       router.push('/');
     }
@@ -239,6 +251,7 @@ async function handleVerifyOtp() {
 
     showOtpDialog.value = false;
     localStorage.setItem('logged_in', '1');
+    await loadProfileImage();
     showSnackBar('Signed in!');
     router.push('/');
   } catch {
