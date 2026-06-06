@@ -1,6 +1,7 @@
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 
+mod blob_storage;
 mod db;
 mod email_queue;
 mod helpers;
@@ -15,9 +16,23 @@ async fn main() -> std::io::Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let resend_api_key = std::env::var("RESEND_API_KEY").expect("RESEND_API_KEY must be set");
+    let blob_encryption_key = web::Data::new(helpers::encryption::EncryptionKey::from_env());
 
     let pool = db::create_pool(&database_url);
     let queue = email_queue::start_worker(resend_api_key);
+
+    let blob_container = blob_storage::create_client();
+    if !blob_container
+        .exists()
+        .await
+        .expect("failed to check blob storage container")
+    {
+        blob_container
+            .create()
+            .await
+            .expect("failed to create blob storage container");
+    }
+    let blob_container = web::Data::new(blob_container);
 
     HttpServer::new(move || {
         let cors = Cors::default()
@@ -35,13 +50,16 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(queue.clone()))
+            .app_data(blob_container.clone())
+            .app_data(blob_encryption_key.clone())
             .service(
                 web::scope("/api")
                     .configure(routes::auth::configure)
                     .configure(routes::settings::configure)
                     .configure(routes::blog::configure)
                     .configure(routes::admin::configure)
-                    .configure(routes::users::configure),
+                    .configure(routes::users::configure)
+                    .configure(routes::recordings::configure),
             )
     })
     .bind(("0.0.0.0", 8080))?

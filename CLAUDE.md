@@ -10,6 +10,7 @@ rust-playground/
 │   ├── main.rs                          # HTTP server, route/middleware wiring
 │   ├── schema.rs                        # Diesel-generated DB schema
 │   ├── db.rs                            # DB connection pool setup
+│   ├── blob_storage.rs                  # Azure Blob Storage client factory
 │   ├── email_queue.rs                   # Background email worker (Resend API)
 │   ├── helpers/
 │   │   ├── auth/
@@ -25,6 +26,7 @@ rust-playground/
 │   │   ├── failed_login_attempt/mod.rs  # Failed login attempt model
 │   │   ├── otp_code/mod.rs              # OTP code model
 │   │   ├── password_history/mod.rs      # Password history model (last 5 hashes)
+│   │   ├── recording/mod.rs             # Recording model (blob_key, metadata)
 │   │   └── user_diesel/mod.rs           # User model
 │   └── routes/
 │       ├── mod.rs
@@ -36,6 +38,12 @@ rust-playground/
 │       │   ├── unlock_account.rs        # GET  /api/auth/unlock-account
 │       │   ├── verify_email.rs          # GET  /api/auth/verify-email
 │       │   └── verify_otp.rs            # POST /api/auth/verify-otp
+│       ├── recordings/
+│       │   ├── mod.rs                   # Registers /api/recordings/* routes
+│       │   ├── upload.rs                # POST /api/recordings/upload (streaming block-blob)
+│       │   ├── get.rs                   # GET  /api/recordings/{id} (streaming download)
+│       │   ├── list.rs                  # GET  /api/recordings
+│       │   └── delete.rs                # DELETE /api/recordings/{id}
 │       └── settings/
 │           ├── mod.rs                   # Registers /api/settings/* routes
 │           ├── change_password.rs       # POST /api/settings/change-password (auth-guarded)
@@ -69,6 +77,7 @@ rust-playground/
 │           └── NavBar.vue           # v-app-bar + v-navigation-drawer
 ├── Dockerfile
 ├── docker-compose.local.yml
+├── docker-compose.debug.yml
 ├── Cargo.toml
 └── diesel.toml
 ```
@@ -80,6 +89,7 @@ rust-playground/
 - **Auth**: PASETO tokens stored as HTTP-only cookies; `paseto_auth` middleware guards protected routes
 - **Email**: Background queue worker using Resend API; ed25519-dalek signs email verification and unlock tokens
 - **2FA**: TOTP OTP codes via the `otp_codes` table
+- **Blob storage**: Azure Blob Storage via `azure_storage_blobs` 0.21; local dev uses Azurite emulator
 - **Port**: 8080
 
 ### API Routes
@@ -97,6 +107,10 @@ All routes are under the `/api` prefix.
 | `GET` | `/api/settings` | Yes | Fetch user settings |
 | `POST` | `/api/settings/2fa` | Yes | Toggle 2FA on/off |
 | `POST` | `/api/settings/change-password` | Yes | Change password; rejects last 5 used passwords |
+| `POST` | `/api/recordings/upload` | Yes | Stream-upload a FLAC; stored as block blob, metadata in DB |
+| `GET` | `/api/recordings` | Yes | List recordings (metadata only) |
+| `GET` | `/api/recordings/{id}` | Yes | Stream-download a recording |
+| `DELETE` | `/api/recordings/{id}` | Yes | Delete blob from Azure then remove DB row |
 
 ### DB Schema
 
@@ -107,6 +121,21 @@ All routes are under the `/api` prefix.
 **`password_history`** — `id` (UUID), `user_id` (UUID → users), `password_hash`, `created_at`; pruned to 5 most recent entries per user on each password change
 
 **`failed_login_attempts`** — `id` (UUID), `user_id` (UUID → users), `attempted_at`; cleared on successful login or account unlock; triggers lockout at 5 entries
+
+**`recordings`** — `id` (UUID), `user_id` (UUID → users), `filename` (TEXT), `size_bytes` (BIGINT), `blob_key` (TEXT), `created_at`; blob data lives in Azure Blob Storage, not the DB
+
+### Blob storage
+
+`src/blob_storage.rs` reads two env vars and builds a `ContainerClient`:
+
+- **`AZURE_STORAGE_CONNECTION_STRING`** — determines the backend:
+  - Contains `BlobEndpoint=http://…` → Azurite emulator; host/port parsed from the URL, well-known dev credentials used automatically
+  - Contains `AccountName` + `AccountKey` (no custom endpoint) → production Azure Blob Storage
+- **`AZURE_STORAGE_CONTAINER`** — container name (default: `recordings`)
+
+The `ContainerClient` is injected as `web::Data<ContainerClient>` into all recording route handlers.
+
+Upload uses the block-blob API (4 MiB blocks streamed as they arrive; no full buffering). Download streams the pageable response body directly to the HTTP client.
 
 ### Lockout flow
 
@@ -167,5 +196,10 @@ npm run build  # production build
 
 ## Docker
 ```bash
-docker-compose -f docker-compose.local.yml up
+docker-compose -f docker-compose.local.yml up   # includes Azurite
+docker-compose -f docker-compose.debug.yml up   # debug build + gdbserver + Azurite
 ```
+
+Both compose files include the Azurite service (`mcr.microsoft.com/azure-storage/azurite`) and wire the correct `AZURE_STORAGE_CONNECTION_STRING` (pointing at `http://azurite:10000`) into the app container. Azurite data is persisted in a named `azurite_data` volume.
+
+For production, set `AZURE_STORAGE_CONNECTION_STRING` to your real Azure connection string (no `BlobEndpoint` key) and `AZURE_STORAGE_CONTAINER` to the target container name.

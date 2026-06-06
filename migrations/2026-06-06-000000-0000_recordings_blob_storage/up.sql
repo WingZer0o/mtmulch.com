@@ -1,0 +1,3 @@
+ALTER TABLE recordings DROP COLUMN data;
+ALTER TABLE recordings ADD COLUMN blob_key TEXT NOT NULL DEFAULT '';
+ALTER TABLE recordings ALTER COLUMN blob_key DROP DEFAULT;
