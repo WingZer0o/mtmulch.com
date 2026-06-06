@@ -74,7 +74,33 @@
             <span class="rec-name">{{ rec.filename }}</span>
             <span class="muted">{{ formatBytes(rec.size_bytes) }} · {{ formatDate(rec.created_at) }}</span>
           </div>
-          <audio :src="`/api/recordings/${rec.id}`" controls class="audio-player" preload="none"></audio>
+          <div class="custom-player">
+            <button
+              class="play-btn"
+              :disabled="getPlayer(rec.id).loading"
+              @click="togglePlay(rec.id)"
+            >
+              <span v-if="getPlayer(rec.id).loading" class="play-icon">⋯</span>
+              <span v-else-if="getPlayer(rec.id).playing" class="play-icon">⏸</span>
+              <span v-else class="play-icon">▶</span>
+            </button>
+            <span class="time-label">{{ formatTime(getPlayer(rec.id).currentTime) }}</span>
+            <div class="seek-wrap">
+              <input
+                type="range"
+                class="seek-slider"
+                :min="0"
+                :max="getPlayer(rec.id).duration || 0"
+                :value="getPlayer(rec.id).currentTime"
+                step="0.01"
+                :disabled="!getPlayer(rec.id).loaded"
+                :style="`--pct: ${getPlayer(rec.id).duration ? (getPlayer(rec.id).currentTime / getPlayer(rec.id).duration * 100).toFixed(2) : 0}%`"
+                @input="handleSeekInput(rec.id, +($event.target as HTMLInputElement).value)"
+                @change="handleSeekChange(rec.id, +($event.target as HTMLInputElement).value)"
+              />
+            </div>
+            <span class="time-label">{{ formatTime(getPlayer(rec.id).duration) }}</span>
+          </div>
           <div class="rec-acts">
             <button class="btn-danger small" @click="deleteRecording(rec.id)">Delete</button>
           </div>
@@ -280,7 +306,7 @@ function stopRecording() {
 }
 
 function buildPending() {
-  const blob = new Blob(flacChunks, { type: 'audio/flac' })
+  const blob = new Blob(flacChunks as BlobPart[], { type: 'audio/flac' })
   const url = URL.createObjectURL(blob)
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   const name = `recording-${stamp}.flac`
@@ -336,6 +362,104 @@ async function loadSaved() {
   }
 }
 
+// ---------- Custom audio player ----------
+
+interface PlayerState {
+  audio: HTMLAudioElement | null
+  blobUrl: string | null
+  loaded: boolean
+  loading: boolean
+  playing: boolean
+  currentTime: number
+  duration: number
+  seeking: boolean
+}
+
+const players = ref<Record<string, PlayerState>>({})
+
+function getPlayer(id: string): PlayerState {
+  if (!players.value[id]) {
+    players.value[id] = {
+      audio: null,
+      blobUrl: null,
+      loaded: false,
+      loading: false,
+      playing: false,
+      currentTime: 0,
+      duration: 0,
+      seeking: false,
+    }
+  }
+  return players.value[id]
+}
+
+async function togglePlay(id: string) {
+  const p = getPlayer(id)
+
+  if (!p.loaded && !p.loading) {
+    p.loading = true
+    try {
+      const res = await apiFetch(`/api/recordings/${id}`)
+      if (!res.ok) { showSnackBar('Failed to load recording.', 'error'); return }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audio.preload = 'auto'
+      audio.addEventListener('timeupdate', () => {
+        if (!p.seeking) p.currentTime = audio.currentTime
+      })
+      audio.addEventListener('durationchange', () => {
+        if (isFinite(audio.duration)) p.duration = audio.duration
+      })
+      audio.addEventListener('ended', () => { p.playing = false; p.currentTime = 0 })
+      p.blobUrl = url
+      p.audio = audio
+      p.loaded = true
+    } catch {
+      showSnackBar('Network error loading recording.', 'error')
+      return
+    } finally {
+      p.loading = false
+    }
+  }
+
+  if (!p.audio) return
+
+  if (p.playing) {
+    p.audio.pause()
+    p.playing = false
+  } else {
+    // Pause any other playing recordings
+    for (const [otherId, other] of Object.entries(players.value)) {
+      if (otherId !== id && other.playing && other.audio) {
+        other.audio.pause()
+        other.playing = false
+      }
+    }
+    await p.audio.play()
+    p.playing = true
+  }
+}
+
+function handleSeekInput(id: string, value: number) {
+  const p = getPlayer(id)
+  p.seeking = true
+  p.currentTime = value
+}
+
+function handleSeekChange(id: string, value: number) {
+  const p = getPlayer(id)
+  if (p.audio) p.audio.currentTime = value
+  p.seeking = false
+}
+
+function formatTime(sec: number): string {
+  if (!sec || isNaN(sec)) return '0:00'
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60).toString().padStart(2, '0')
+  return `${m}:${s}`
+}
+
 // ---------- Helpers ----------
 
 function formatBytes(n: number): string {
@@ -371,6 +495,10 @@ onMounted(async () => {
 onUnmounted(() => {
   if (recording.value) stopRecording()
   URL.revokeObjectURL(workletUrl)
+  for (const p of Object.values(players.value)) {
+    p.audio?.pause()
+    if (p.blobUrl) URL.revokeObjectURL(p.blobUrl)
+  }
 })
 </script>
 
@@ -565,10 +693,105 @@ h2 {
   flex-wrap: wrap;
 }
 
-.audio-player {
+.custom-player {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   width: 100%;
   margin-top: 0.25rem;
-  accent-color: var(--accent);
+}
+
+.play-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+
+.play-btn:hover:not(:disabled) { color: var(--accent); }
+.play-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.play-icon {
+  font-size: 1rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.time-label {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  min-width: 2.8rem;
+  text-align: center;
+}
+
+.seek-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 20px;
+}
+
+.seek-slider {
+  --pct: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--pct),
+    var(--border) var(--pct)
+  );
+  outline: none;
+  cursor: pointer;
+  transition: height 0.12s;
+}
+
+.seek-slider:hover { height: 6px; }
+
+.seek-slider:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.seek-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+  background: #fff;
+  border-radius: 50%;
+  transition: width 0.12s, height 0.12s;
+}
+
+.seek-slider:hover::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.seek-slider::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  transition: width 0.12s, height 0.12s;
+}
+
+.seek-slider:hover::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
 }
 
 .btn-primary {
