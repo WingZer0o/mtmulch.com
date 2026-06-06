@@ -7,11 +7,10 @@ use futures_util::StreamExt;
 use uuid::Uuid;
 
 use crate::db::DbPool;
+use crate::helpers::encryption::{BLOCK_SIZE, EncryptionKey, NONCE_SIZE};
 use crate::middleware::AuthUser;
 use crate::models::recording::NewRecording;
 use crate::schema::recordings;
-
-const BLOCK_SIZE: usize = 4 * 1024 * 1024; // 4 MiB per block
 
 #[post("/upload")]
 pub async fn upload(
@@ -19,6 +18,7 @@ pub async fn upload(
     req: HttpRequest,
     mut payload: web::Payload,
     container: web::Data<ContainerClient>,
+    enc_key: web::Data<EncryptionKey>,
 ) -> actix_web::Result<HttpResponse> {
     let user_id = req.extensions().get::<AuthUser>().unwrap().0;
     let recording_id = Uuid::new_v4();
@@ -30,58 +30,49 @@ pub async fn upload(
         .map(sanitize_filename)
         .unwrap_or_else(default_filename);
 
-    // Blob key is scoped per user so keys never collide across accounts.
     let blob_key = format!("{user_id}/{recording_id}/{filename}");
     let blob_client = container.blob_client(&blob_key);
 
+    let (nonce, mut encryptor) = enc_key.begin_encrypt();
     let mut uncommitted: Vec<BlobBlockType> = Vec::new();
     let mut pending: Vec<u8> = Vec::new();
     let mut block_idx: u32 = 0;
     let mut total_bytes: i64 = 0;
+    // Nonce is prepended once to the first block uploaded.
+    let mut nonce_prepended = false;
 
-    // Stream the incoming payload; flush full blocks to Azure as they fill.
     while let Some(chunk) = payload.next().await {
         let chunk = chunk.map_err(actix_web::error::ErrorInternalServerError)?;
         total_bytes += chunk.len() as i64;
         pending.extend_from_slice(&chunk);
 
+        // Encrypt and upload every full segment immediately.
         while pending.len() >= BLOCK_SIZE {
-            let block_data: Vec<u8> = pending.drain(..BLOCK_SIZE).collect();
-            let block_id = BlockId::new(block_idx.to_be_bytes().to_vec());
-            blob_client
-                .put_block(block_id.clone(), block_data)
-                .await
-                .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
-            uncommitted.push(BlobBlockType::Uncommitted(block_id));
-            block_idx += 1;
+            let plaintext: Vec<u8> = pending.drain(..BLOCK_SIZE).collect();
+            let ct = encryptor
+                .encrypt_next(plaintext.as_slice())
+                .map_err(|_| actix_web::error::ErrorInternalServerError("Encryption failed"))?;
+
+            let block_data = with_nonce_prefix(&nonce, ct, &mut nonce_prepended);
+            put_block(&blob_client, &mut uncommitted, &mut block_idx, block_data)
+                .await?;
         }
     }
 
-    // Flush any remaining bytes as the final block.
-    if !pending.is_empty() {
-        let block_id = BlockId::new(block_idx.to_be_bytes().to_vec());
-        blob_client
-            .put_block(block_id.clone(), pending)
-            .await
-            .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
-        uncommitted.push(BlobBlockType::Uncommitted(block_id));
-    }
+    // Seal the final segment — may be the only one if the file was < BLOCK_SIZE.
+    let ct = encryptor
+        .encrypt_last(pending.as_slice())
+        .map_err(|_| actix_web::error::ErrorInternalServerError("Encryption failed"))?;
 
-    if uncommitted.is_empty() {
-        // Zero-byte upload — write an empty blob directly.
-        blob_client
-            .put_block_blob(vec![])
-            .content_type("audio/flac")
-            .await
-            .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
-    } else {
-        // Commit all uploaded blocks.
-        blob_client
-            .put_block_list(BlockList { blocks: uncommitted })
-            .content_type("audio/flac")
-            .await
-            .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
-    }
+    let block_data = with_nonce_prefix(&nonce, ct, &mut nonce_prepended);
+    put_block(&blob_client, &mut uncommitted, &mut block_idx, block_data)
+        .await?;
+
+    blob_client
+        .put_block_list(BlockList { blocks: uncommitted })
+        .content_type("application/octet-stream")
+        .await
+        .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
 
     let new_rec = NewRecording {
         id: recording_id,
@@ -105,6 +96,34 @@ pub async fn upload(
         "filename": filename,
         "size_bytes": total_bytes,
     })))
+}
+
+/// Prepends the nonce to `ct` on the very first call; returns `ct` unchanged thereafter.
+fn with_nonce_prefix(nonce: &[u8; NONCE_SIZE], ct: Vec<u8>, prepended: &mut bool) -> Vec<u8> {
+    if *prepended {
+        return ct;
+    }
+    *prepended = true;
+    let mut out = Vec::with_capacity(NONCE_SIZE + ct.len());
+    out.extend_from_slice(nonce);
+    out.extend_from_slice(&ct);
+    out
+}
+
+async fn put_block(
+    blob_client: &azure_storage_blobs::prelude::BlobClient,
+    uncommitted: &mut Vec<BlobBlockType>,
+    block_idx: &mut u32,
+    data: Vec<u8>,
+) -> actix_web::Result<()> {
+    let block_id = BlockId::new(block_idx.to_be_bytes().to_vec());
+    blob_client
+        .put_block(block_id.clone(), data)
+        .await
+        .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
+    uncommitted.push(BlobBlockType::Uncommitted(block_id));
+    *block_idx += 1;
+    Ok(())
 }
 
 fn sanitize_filename(name: &str) -> String {

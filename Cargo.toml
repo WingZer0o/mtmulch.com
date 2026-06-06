@@ -26,3 +26,4 @@ base64 = "0.22"
 azure_storage = "0.21"
 azure_storage_blobs = "0.21"
 async-stream = "0.3"
+chacha20poly1305 = { version = "0.10", features = ["stream"] }

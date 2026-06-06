@@ -16,6 +16,7 @@ async fn main() -> std::io::Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let resend_api_key = std::env::var("RESEND_API_KEY").expect("RESEND_API_KEY must be set");
+    let blob_encryption_key = web::Data::new(helpers::encryption::EncryptionKey::from_env());
 
     let pool = db::create_pool(&database_url);
     let queue = email_queue::start_worker(resend_api_key);
@@ -50,6 +51,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(queue.clone()))
             .app_data(blob_container.clone())
+            .app_data(blob_encryption_key.clone())
             .service(
                 web::scope("/api")
                     .configure(routes::auth::configure)
