@@ -136,6 +136,17 @@ section {
   display: none !important;
 }
 
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.muted {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .v-messages__message {
   color: #f87171 !important;
   font-family: var(--mono) !important;

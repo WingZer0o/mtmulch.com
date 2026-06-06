@@ -41,6 +41,19 @@
         <p class="status-msg">{{ status }}</p>
       </div>
 
+      <!-- Effects chain -->
+      <div class="section section-border">
+        <h2>Effects</h2>
+        <FxDistortion />
+        <FxEq />
+        <FxCompressor />
+        <FxDelay />
+        <FxReverb />
+        <FxTremolo />
+        <FxChorus />
+        <FxWah />
+      </div>
+
       <!-- Pending (recorded locally, not yet uploaded) -->
       <div v-if="pending.length > 0" class="section section-border">
         <h2>New Recordings</h2>
@@ -111,9 +124,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, provide, onMounted, onUnmounted } from 'vue'
 import { apiFetch } from '../../api'
 import { showSnackBar } from '../../components/subjects/snack-bar-subject'
+import FxDistortion from './components/FxDistortion.vue'
+import FxEq         from './components/FxEq.vue'
+import FxCompressor from './components/FxCompressor.vue'
+import FxDelay      from './components/FxDelay.vue'
+import FxReverb     from './components/FxReverb.vue'
+import FxTremolo    from './components/FxTremolo.vue'
+import FxChorus     from './components/FxChorus.vue'
+import FxWah        from './components/FxWah.vue'
+import { useDistortionFx, distortionFxKey } from './composables/useDistortionFx'
+import { useEqFx,         eqFxKey         } from './composables/useEqFx'
+import { useCompressorFx, compressorFxKey } from './composables/useCompressorFx'
+import { useDelayFx,      delayFxKey      } from './composables/useDelayFx'
+import { useReverbFx,     reverbFxKey     } from './composables/useReverbFx'
+import { useTremoloFx,    tremoloFxKey    } from './composables/useTremoloFx'
+import { useChorusFx,     chorusFxKey     } from './composables/useChorusFx'
+import { useWahFx,        wahFxKey        } from './composables/useWahFx'
 
 // ---------- Reactive state ----------
 
@@ -145,12 +174,33 @@ const pending = ref<PendingRecording[]>([])
 const saved = ref<SavedRecording[]>([])
 const loadError = ref('')
 
+// ---------- Effects composables ----------
+
+const distortionFx  = useDistortionFx()
+const eqFx          = useEqFx()
+const compressorFx  = useCompressorFx()
+const delayFx       = useDelayFx()
+const reverbFx      = useReverbFx()
+const tremoloFx     = useTremoloFx()
+const chorusFx      = useChorusFx()
+const wahFx         = useWahFx()
+
+provide(distortionFxKey,  distortionFx)
+provide(eqFxKey,          eqFx)
+provide(compressorFxKey,  compressorFx)
+provide(delayFxKey,       delayFx)
+provide(reverbFxKey,      reverbFx)
+provide(tremoloFxKey,     tremoloFx)
+provide(chorusFxKey,      chorusFx)
+provide(wahFxKey,         wahFx)
+
 // ---------- Non-reactive audio state (changes on every audio frame) ----------
 
 let audioCtx: AudioContext | null = null
 let mediaStream: MediaStream | null = null
 let workletNode: AudioWorkletNode | null = null
 let sourceNode: MediaStreamAudioSourceNode | null = null
+
 let encoder = 0
 let flacChunks: Uint8Array[] = []
 let captureMode: 'mono1' | 'mono2' | 'stereo' = 'mono1'
@@ -237,7 +287,17 @@ async function startRecording() {
   sourceNode = audioCtx.createMediaStreamSource(mediaStream)
   workletNode = new AudioWorkletNode(audioCtx, 'capture-processor')
   workletNode.port.onmessage = (e) => handleAudioBlock(e.data)
-  sourceNode.connect(workletNode)
+
+  let prev: AudioNode = sourceNode
+  prev = distortionFx.connect(audioCtx, prev)
+  prev = eqFx.connect(audioCtx, prev)
+  prev = compressorFx.connect(audioCtx, prev)
+  prev = tremoloFx.connect(audioCtx, prev)
+  prev = chorusFx.connect(audioCtx, prev)
+  prev = delayFx.connect(audioCtx, prev)
+  prev = reverbFx.connect(audioCtx, prev)
+  prev = wahFx.connect(audioCtx, prev)
+  prev.connect(workletNode)
   workletNode.connect(audioCtx.destination)
 
   recording.value = true
@@ -288,6 +348,14 @@ function stopRecording() {
   if (!recording.value) return
   recording.value = false
 
+  distortionFx.disconnect()
+  eqFx.disconnect()
+  compressorFx.disconnect()
+  tremoloFx.disconnect()
+  chorusFx.disconnect()
+  delayFx.disconnect()
+  reverbFx.disconnect()
+  wahFx.disconnect()
   try { sourceNode?.disconnect() } catch {}
   try { workletNode?.disconnect() } catch {}
   mediaStream?.getTracks().forEach(t => t.stop())
@@ -568,11 +636,7 @@ h2 {
   margin-bottom: 1rem;
 }
 
-.field-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
+/* .field-label lives in main.css */
 
 .field-select {
   background: var(--bg);
@@ -681,10 +745,7 @@ h2 {
   word-break: break-all;
 }
 
-.muted {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
+/* .muted lives in main.css */
 
 .rec-acts {
   display: flex;
@@ -884,4 +945,6 @@ h2 {
 .state-msg.error {
   color: #f87171;
 }
+
+/* toggle-switch, fx-* live in EffectBlock.vue */
 </style>
