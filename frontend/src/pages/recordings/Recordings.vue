@@ -115,6 +115,7 @@
             <span class="time-label">{{ formatTime(getPlayer(rec.id).duration) }}</span>
           </div>
           <div class="rec-acts">
+            <button class="btn-ghost small" @click="downloadRecording(rec.id, rec.filename)">⬇ Download</button>
             <button class="btn-danger small" @click="deleteRecording(rec.id)">Delete</button>
           </div>
         </div>
@@ -416,6 +417,35 @@ async function deleteRecording(id: string) {
   } catch {
     showSnackBar('Network error.', 'error')
   }
+}
+
+// ---------- Download ----------
+
+async function downloadRecording(id: string, filename: string) {
+  const p = getPlayer(id)
+  if (p.loaded && p.blobUrl) {
+    triggerDownload(p.blobUrl, filename)
+    return
+  }
+  try {
+    const res = await apiFetch(`/api/recordings/${id}`)
+    if (!res.ok) { showSnackBar('Failed to download recording.', 'error'); return }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    triggerDownload(url, filename)
+    URL.revokeObjectURL(url)
+  } catch {
+    showSnackBar('Network error.', 'error')
+  }
+}
+
+function triggerDownload(url: string, filename: string) {
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
 }
 
 // ---------- Load saved recordings ----------
