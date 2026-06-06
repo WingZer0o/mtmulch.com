@@ -25,6 +25,7 @@
       </v-list-item>
       <v-list-item prepend-icon="mdi-home-outline" title="Home" @click="navigate('/')"></v-list-item>
       <v-list-item prepend-icon="mdi-post-outline" title="Blog" @click="navigate('/blog')"></v-list-item>
+      <v-list-item prepend-icon="mdi-guitar-electric" title="Tuner" @click="navigate('/tuner')"></v-list-item>
       <template v-if="isLoggedIn">
         <v-list-item prepend-icon="mdi-cog-outline" title="Settings" @click="navigate('/settings')"></v-list-item>
         <v-list-item prepend-icon="mdi-microphone-outline" title="Recordings" @click="navigate('/recordings')"></v-list-item>

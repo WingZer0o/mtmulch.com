@@ -6,6 +6,7 @@ import Blog from './pages/blog/Blog.vue'
 import BlogPost from './pages/blog/BlogPost.vue'
 import Admin from './pages/admin/Admin.vue'
 import Recordings from './pages/recordings/Recordings.vue'
+import Tuner from './pages/tuner/Tuner.vue'
 import { logOut } from './api'
 
 function getIsAdminCookie(): boolean {
@@ -17,6 +18,7 @@ export default createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: Home },
+    { path: '/tuner', component: Tuner },
     { path: '/login', component: Auth },
     { path: '/register', component: Auth },
     { path: '/blog', component: Blog },
