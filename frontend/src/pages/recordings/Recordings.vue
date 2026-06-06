@@ -54,6 +54,36 @@
         <FxWah />
       </div>
 
+      <!-- FX Profiles -->
+      <div class="section section-border">
+        <h2>FX Profiles</h2>
+        <div class="field">
+          <div class="row-group">
+            <input
+              v-model="profileName"
+              class="field-input"
+              placeholder="Profile name…"
+              maxlength="64"
+              @keydown.enter="saveProfile"
+            />
+            <button class="btn-primary small" :disabled="!profileName.trim() || savingProfile" @click="saveProfile">
+              {{ savingProfile ? 'Saving…' : 'Save' }}
+            </button>
+          </div>
+        </div>
+        <div v-if="profiles.length === 0" class="state-msg">No saved profiles yet.</div>
+        <div v-for="profile in profiles" :key="profile.id" class="rec-row">
+          <div class="rec-meta">
+            <span class="rec-name">{{ profile.name }}</span>
+            <span class="muted">{{ formatDate(profile.created_at) }}</span>
+          </div>
+          <div class="rec-acts">
+            <button class="btn-ghost small" @click="loadProfile(profile)">Load</button>
+            <button class="btn-danger small" @click="deleteProfile(profile.id)">Delete</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Pending (recorded locally, not yet uploaded) -->
       <div v-if="pending.length > 0" class="section section-border">
         <h2>New Recordings</h2>
@@ -448,6 +478,93 @@ function triggerDownload(url: string, filename: string) {
   document.body.removeChild(a)
 }
 
+// ---------- FX Profiles ----------
+
+interface FxProfileData {
+  id: string
+  name: string
+  settings: string
+  created_at: string
+}
+
+const profiles = ref<FxProfileData[]>([])
+const profileName = ref('')
+const savingProfile = ref(false)
+
+function snapshotFx() {
+  return JSON.stringify({
+    distortion: { ...distortionFx.state },
+    eq: { ...eqFx.state },
+    compressor: { ...compressorFx.state },
+    delay: { ...delayFx.state },
+    reverb: { ...reverbFx.state },
+    tremolo: { ...tremoloFx.state },
+    chorus: { ...chorusFx.state },
+    wah: { ...wahFx.state },
+  })
+}
+
+function applySnapshot(settings: string) {
+  try {
+    const s = JSON.parse(settings)
+    if (s.distortion) Object.assign(distortionFx.state, s.distortion)
+    if (s.eq)         Object.assign(eqFx.state, s.eq)
+    if (s.compressor) Object.assign(compressorFx.state, s.compressor)
+    if (s.delay)      Object.assign(delayFx.state, s.delay)
+    if (s.reverb)     Object.assign(reverbFx.state, s.reverb)
+    if (s.tremolo)    Object.assign(tremoloFx.state, s.tremolo)
+    if (s.chorus)     Object.assign(chorusFx.state, s.chorus)
+    if (s.wah)        Object.assign(wahFx.state, s.wah)
+  } catch {
+    showSnackBar('Invalid profile data.', 'error')
+  }
+}
+
+async function loadProfiles() {
+  try {
+    const res = await apiFetch('/api/fx-profiles')
+    if (!res.ok) return
+    profiles.value = await res.json()
+  } catch {}
+}
+
+async function saveProfile() {
+  const name = profileName.value.trim()
+  if (!name || savingProfile.value) return
+  savingProfile.value = true
+  try {
+    const res = await apiFetch('/api/fx-profiles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, settings: snapshotFx() }),
+    })
+    if (!res.ok) { showSnackBar('Failed to save profile.', 'error'); return }
+    profileName.value = ''
+    showSnackBar(`Profile "${name}" saved.`)
+    await loadProfiles()
+  } catch {
+    showSnackBar('Network error.', 'error')
+  } finally {
+    savingProfile.value = false
+  }
+}
+
+function loadProfile(profile: FxProfileData) {
+  applySnapshot(profile.settings)
+  showSnackBar(`Loaded "${profile.name}".`)
+}
+
+async function deleteProfile(id: string) {
+  try {
+    const res = await apiFetch(`/api/fx-profiles/${id}`, { method: 'DELETE' })
+    if (!res.ok) { showSnackBar('Failed to delete profile.', 'error'); return }
+    profiles.value = profiles.value.filter(p => p.id !== id)
+    showSnackBar('Profile deleted.')
+  } catch {
+    showSnackBar('Network error.', 'error')
+  }
+}
+
 // ---------- Load saved recordings ----------
 
 async function loadSaved() {
@@ -587,7 +704,7 @@ onMounted(async () => {
   }
   document.head.appendChild(script)
 
-  await loadSaved()
+  await Promise.all([loadSaved(), loadProfiles()])
 })
 
 onUnmounted(() => {
@@ -667,6 +784,27 @@ h2 {
 }
 
 /* .field-label lives in main.css */
+
+.field-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.875rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+  flex: 1;
+  font-family: inherit;
+}
+
+.field-input:focus {
+  border-color: var(--accent);
+}
+
+.field-input::placeholder {
+  color: var(--text-muted);
+}
 
 .field-select {
   background: var(--bg);

@@ -1,4 +1,5 @@
 pub mod blog_post;
+pub mod fx_profile;
 pub mod comment;
 pub mod email_list;
 pub mod failed_login_attempt;

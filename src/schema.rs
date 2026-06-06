@@ -34,6 +34,16 @@ diesel::table! {
 }
 
 diesel::table! {
+    fx_profiles (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        name -> Varchar,
+        settings -> Text,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     otp_codes (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -94,6 +104,7 @@ diesel::table! {
 
 diesel::joinable!(blog_posts -> users (author_id));
 diesel::joinable!(failed_login_attempts -> users (user_id));
+diesel::joinable!(fx_profiles -> users (user_id));
 diesel::joinable!(otp_codes -> users (user_id));
 diesel::joinable!(password_history -> users (user_id));
 diesel::joinable!(post_comments -> blog_posts (post_id));
@@ -104,6 +115,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     blog_posts,
     email_list,
     failed_login_attempts,
+    fx_profiles,
     otp_codes,
     password_history,
     post_comments,

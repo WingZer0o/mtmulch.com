@@ -59,7 +59,8 @@ async fn main() -> std::io::Result<()> {
                     .configure(routes::blog::configure)
                     .configure(routes::admin::configure)
                     .configure(routes::users::configure)
-                    .configure(routes::recordings::configure),
+                    .configure(routes::recordings::configure)
+                    .configure(routes::fx_profiles::configure),
             )
     })
     .bind(("0.0.0.0", 8080))?
