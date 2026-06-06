@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from './pages/home/Home.vue'
-import Auth from './pages/auth/Auth.vue'
-import Settings from './pages/settings/Settings.vue'
-import Blog from './pages/blog/Blog.vue'
-import BlogPost from './pages/blog/BlogPost.vue'
-import Admin from './pages/admin/Admin.vue'
-import Recordings from './pages/recordings/Recordings.vue'
-import Tuner from './pages/tuner/Tuner.vue'
 import { logOut } from './api'
+
+const Home = () => import('./pages/home/Home.vue')
+const Auth = () => import('./pages/auth/Auth.vue')
+const Settings = () => import('./pages/settings/Settings.vue')
+const Blog = () => import('./pages/blog/Blog.vue')
+const BlogPost = () => import('./pages/blog/BlogPost.vue')
+const Admin = () => import('./pages/admin/Admin.vue')
+const Recordings = () => import('./pages/recordings/Recordings.vue')
+const Tuner = () => import('./pages/tuner/Tuner.vue')
 
 function getIsAdminCookie(): boolean {
   const match = document.cookie.split('; ').find(row => row.startsWith('is_admin='))
