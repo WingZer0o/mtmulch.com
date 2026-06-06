@@ -1,28 +1,23 @@
+use azure_identity::DefaultAzureCredential;
 use azure_storage::{CloudLocation, ConnectionString, StorageCredentials};
 use azure_storage_blobs::prelude::{ClientBuilder, ContainerClient};
+use std::sync::Arc;
 
-/// Builds a `ContainerClient` from environment variables.
-///
-/// Switch between local Azurite and production Azure Blob Storage by changing
-/// `AZURE_STORAGE_CONNECTION_STRING`:
-///
-/// - **Azurite** (has `BlobEndpoint=http://…`): uses `CloudLocation::Emulator`
-///   with the well-known dev credentials.
-/// - **Production** (has `AccountName` + `AccountKey`, no custom endpoint):
-///   uses `CloudLocation::Public` with your real account key.
 pub fn create_client() -> ContainerClient {
-    let conn_str = std::env::var("AZURE_STORAGE_CONNECTION_STRING")
-        .expect("AZURE_STORAGE_CONNECTION_STRING must be set");
     let container = std::env::var("AZURE_STORAGE_CONTAINER")
         .unwrap_or_else(|_| "recordings".to_string());
 
-    let cs = ConnectionString::new(&conn_str)
+    match std::env::var("AZURE_STORAGE_CONNECTION_STRING") {
+        Ok(conn_str) => create_client_from_connection_string(&conn_str, container),
+        Err(_) => create_client_from_identity(container),
+    }
+}
+
+fn create_client_from_connection_string(conn_str: &str, container: String) -> ContainerClient {
+    let cs = ConnectionString::new(conn_str)
         .expect("invalid AZURE_STORAGE_CONNECTION_STRING");
 
     let builder = match (cs.blob_endpoint, cs.account_name, cs.account_key) {
-        // Custom BlobEndpoint → Azurite or other emulator.
-        // Extract host/port from the endpoint URL; credentials come from the
-        // well-known emulator key rather than whatever is in the connection string.
         (Some(blob_endpoint), _, _) => {
             let url = url::Url::parse(blob_endpoint)
                 .expect("invalid BlobEndpoint URL in AZURE_STORAGE_CONNECTION_STRING");
@@ -33,7 +28,6 @@ pub fn create_client() -> ContainerClient {
                 StorageCredentials::emulator(),
             )
         }
-        // No custom endpoint + explicit account/key → production Azure.
         (None, Some(account), Some(key)) => ClientBuilder::new(
             account.to_owned(),
             StorageCredentials::access_key(account, key.to_owned()),
@@ -45,4 +39,13 @@ pub fn create_client() -> ContainerClient {
     };
 
     builder.container_client(container)
+}
+
+fn create_client_from_identity(container: String) -> ContainerClient {
+    let account = std::env::var("AZURE_STORAGE_ACCOUNT")
+        .expect("AZURE_STORAGE_ACCOUNT must be set when AZURE_STORAGE_CONNECTION_STRING is not set");
+
+    let credential = Arc::new(DefaultAzureCredential::create(Default::default()).expect("failed to create DefaultAzureCredential"));
+    ClientBuilder::new(account, StorageCredentials::token_credential(credential))
+        .container_client(container)
 }
