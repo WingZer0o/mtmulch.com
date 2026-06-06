@@ -64,6 +64,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    recordings (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        filename -> Text,
+        size_bytes -> Int8,
+        data -> Bytea,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Uuid,
         email -> Varchar,
@@ -87,6 +98,7 @@ diesel::joinable!(otp_codes -> users (user_id));
 diesel::joinable!(password_history -> users (user_id));
 diesel::joinable!(post_comments -> blog_posts (post_id));
 diesel::joinable!(post_comments -> users (user_id));
+diesel::joinable!(recordings -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     blog_posts,
@@ -95,5 +107,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     otp_codes,
     password_history,
     post_comments,
+    recordings,
     users,
 );

@@ -5,6 +5,7 @@ import Settings from './pages/settings/Settings.vue'
 import Blog from './pages/blog/Blog.vue'
 import BlogPost from './pages/blog/BlogPost.vue'
 import Admin from './pages/admin/Admin.vue'
+import Recordings from './pages/recordings/Recordings.vue'
 import { logOut } from './api'
 
 function getIsAdminCookie(): boolean {
@@ -27,7 +28,17 @@ export default createRouter({
         if (localStorage.getItem('logged_in') !== '1') {
           await logOut();
           return '/login'
-        } 
+        }
+      },
+    },
+    {
+      path: '/recordings',
+      component: Recordings,
+      beforeEnter: async () => {
+        if (localStorage.getItem('logged_in') !== '1') {
+          await logOut();
+          return '/login'
+        }
       },
     },
     {
