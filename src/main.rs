@@ -1,6 +1,7 @@
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 
+mod blob_storage;
 mod db;
 mod email_queue;
 mod helpers;
@@ -19,6 +20,19 @@ async fn main() -> std::io::Result<()> {
     let pool = db::create_pool(&database_url);
     let queue = email_queue::start_worker(resend_api_key);
 
+    let blob_container = blob_storage::create_client();
+    if !blob_container
+        .exists()
+        .await
+        .expect("failed to check blob storage container")
+    {
+        blob_container
+            .create()
+            .await
+            .expect("failed to create blob storage container");
+    }
+    let blob_container = web::Data::new(blob_container);
+
     HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("https://mtmulch.com")
@@ -35,6 +49,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(queue.clone()))
+            .app_data(blob_container.clone())
             .service(
                 web::scope("/api")
                     .configure(routes::auth::configure)

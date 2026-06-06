@@ -69,8 +69,8 @@ diesel::table! {
         user_id -> Uuid,
         filename -> Text,
         size_bytes -> Int8,
-        data -> Bytea,
         created_at -> Timestamptz,
+        blob_key -> Text,
     }
 }
 

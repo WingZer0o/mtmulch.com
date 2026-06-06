@@ -11,7 +11,7 @@ pub struct Recording {
     pub user_id: Uuid,
     pub filename: String,
     pub size_bytes: i64,
-    pub data: Vec<u8>,
+    pub blob_key: String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -30,5 +30,5 @@ pub struct NewRecording {
     pub user_id: Uuid,
     pub filename: String,
     pub size_bytes: i64,
-    pub data: Vec<u8>,
+    pub blob_key: String,
 }

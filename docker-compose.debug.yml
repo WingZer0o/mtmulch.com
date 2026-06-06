@@ -17,9 +17,13 @@ services:
       - SYS_PTRACE
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/rust_playground
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tiqSDJLanD/;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      AZURE_STORAGE_CONTAINER: recordings
     depends_on:
       db:
         condition: service_healthy
+      azurite:
+        condition: service_started
     networks:
       - app-net
 
@@ -38,6 +42,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - app-net
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+    volumes:
+      - azurite_data:/data
     networks:
       - app-net
 
@@ -61,6 +77,7 @@ volumes:
   cargo-registry:
   cargo-git:
   cargo-target:
+  azurite_data:
 
 networks:
   app-net:
