@@ -1,133 +1,160 @@
 <template>
   <div class="recordings-wrapper">
-    <div class="recordings-card">
-      <p class="label">Audio</p>
-      <h1>Recordings</h1>
-      <p class="subtitle">Record your guitar and save as FLAC, stored in your account.</p>
+    <div class="rec-layout">
 
-      <!-- Capture controls -->
-      <div class="section">
-        <h2>Capture</h2>
+      <!-- Header -->
+      <header class="rec-header">
+        <p class="rec-eyebrow"><span class="eyebrow-dot"></span>Audio</p>
+        <h1>Recordings</h1>
+        <p class="rec-lede">Record your guitar and save as FLAC, stored in your account.</p>
+      </header>
 
-        <div class="field">
-          <label class="field-label">Input Device</label>
-          <div class="row-group">
-            <select v-model="selectedDevice" :disabled="recording" class="field-select">
-              <option v-for="d in devices" :key="d.deviceId" :value="d.deviceId">{{ d.label }}</option>
-            </select>
-            <button class="btn-ghost" :disabled="recording" @click="enumerate">Refresh</button>
+      <!-- Two-column grid -->
+      <div class="rec-grid">
+
+        <!-- Left: Capture -->
+        <section class="rec-panel capture-panel">
+          <p class="section-label">Capture</p>
+
+          <div class="rec-field">
+            <label>Input device</label>
+            <div class="row-g">
+              <div class="select-wrap">
+                <select v-model="selectedDevice" :disabled="recording">
+                  <option v-for="d in devices" :key="d.deviceId" :value="d.deviceId">{{ d.label }}</option>
+                </select>
+              </div>
+              <button class="rec-btn" :disabled="recording" @click="enumerate">Refresh</button>
+            </div>
           </div>
-        </div>
 
-        <div class="field">
-          <label class="field-label">Channels</label>
-          <select v-model="channelMode" :disabled="recording" class="field-select">
-            <option value="mono1">Mono — Input 1 (instrument)</option>
-            <option value="mono2">Mono — Input 2 (XLR mic)</option>
-            <option value="stereo">Stereo — both inputs</option>
-          </select>
-        </div>
+          <div class="rec-field">
+            <label>Channels</label>
+            <div class="select-wrap">
+              <select v-model="channelMode" :disabled="recording">
+                <option value="mono1">Mono — Input 1 (instrument)</option>
+                <option value="mono2">Mono — Input 2 (XLR mic)</option>
+                <option value="stereo">Stereo — both inputs</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="btn-row">
-          <button class="btn-record" :disabled="!flacReady || recording" @click="startRecording">● Record</button>
-          <button class="btn-stop" :disabled="!recording" @click="stopRecording">■ Stop</button>
-        </div>
+          <div class="transport">
+            <button class="btn-rec" :class="{ live: recording }" :disabled="!flacReady" @click="startRecording">
+              <span class="recdot"></span>{{ recording ? 'Recording…' : 'Record' }}
+            </button>
+            <button class="rec-btn btn-stop" :disabled="!recording" @click="stopRecording">■ Stop</button>
+          </div>
 
-        <div class="field">
-          <label class="field-label">Input Level</label>
-          <progress :value="inputLevel" max="1" class="level-bar"></progress>
-        </div>
+          <div class="meter-section">
+            <div class="meter-head">
+              <span>Input level</span>
+              <span class="mono-txt">{{ recording ? Math.round(inputLevel * 100) + ' / 100' : '—' }}</span>
+            </div>
+            <div class="meter">
+              <div v-for="(seg, i) in meterSegs" :key="i" class="meter-seg"
+                   :class="{ 'meter-seg--on': seg.on }"
+                   :style="{ '--segc': seg.color }"></div>
+            </div>
+            <div class="meter-scale">
+              <span>-∞</span><span>-24</span><span>-12</span><span>-6</span><span>0 dB</span>
+            </div>
+          </div>
 
-        <p class="status-msg">{{ status }}</p>
-      </div>
+          <p class="rec-status mono-txt" :class="{ 'rec-status--live': recording }">{{ status }}</p>
+        </section>
 
-      <!-- Effects chain -->
-      <div class="section section-border">
-        <h2>Effects</h2>
-        <FxDistortion />
-        <FxEq />
-        <FxCompressor />
-        <FxDelay />
-        <FxReverb />
-        <FxTremolo />
-        <FxChorus />
-        <FxWah />
+        <!-- Right: Effects -->
+        <section class="effects-section">
+          <div class="effects-head">
+            <div class="effects-head-left">
+              <p class="section-label">Effects</p>
+              <span class="count-chip">{{ activeCount }} / 8 active</span>
+            </div>
+            <button class="link-btn" @click="toggleAll">{{ allOn ? 'Bypass all' : 'Enable all' }}</button>
+          </div>
+          <div class="fx-grid">
+            <FxDistortion />
+            <FxEq />
+            <FxCompressor />
+            <FxDelay />
+            <FxReverb />
+            <FxTremolo />
+            <FxChorus />
+            <FxWah />
+          </div>
+        </section>
+
       </div>
 
       <!-- FX Profiles -->
-      <div class="section section-border">
-        <h2>FX Profiles</h2>
-        <div class="field">
-          <div class="row-group">
+      <section class="rec-panel panel-below">
+        <p class="section-label">FX Profiles</p>
+        <div class="rec-field">
+          <div class="row-g">
             <input
               v-model="profileName"
-              class="field-input"
+              class="rec-input"
               placeholder="Profile name…"
               maxlength="64"
               @keydown.enter="saveProfile"
             />
-            <button class="btn-primary small" :disabled="!profileName.trim() || savingProfile" @click="saveProfile">
+            <button class="rec-btn rec-btn-primary" :disabled="!profileName.trim() || savingProfile" @click="saveProfile">
               {{ savingProfile ? 'Saving…' : 'Save' }}
             </button>
           </div>
         </div>
-        <div v-if="profiles.length === 0" class="state-msg">No saved profiles yet.</div>
+        <div v-if="profiles.length === 0" class="empty-msg">No saved profiles yet.</div>
         <div v-for="profile in profiles" :key="profile.id" class="rec-row">
           <div class="rec-meta">
             <span class="rec-name">{{ profile.name }}</span>
-            <span class="muted">{{ formatDate(profile.created_at) }}</span>
+            <span class="muted-txt">{{ formatDate(profile.created_at) }}</span>
           </div>
           <div class="rec-acts">
-            <button class="btn-ghost small" @click="loadProfile(profile)">Load</button>
-            <button class="btn-danger small" @click="deleteProfile(profile.id)">Delete</button>
+            <button class="rec-btn rec-btn-sm" @click="loadProfile(profile)">Load</button>
+            <button class="rec-btn rec-btn-danger rec-btn-sm" @click="deleteProfile(profile.id)">Delete</button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Pending (recorded locally, not yet uploaded) -->
-      <div v-if="pending.length > 0" class="section section-border">
-        <h2>New Recordings</h2>
+      <!-- Pending (locally recorded, not yet uploaded) -->
+      <section v-if="pending.length > 0" class="rec-panel panel-below">
+        <p class="section-label">New Recordings</p>
         <div v-for="(p, i) in pending" :key="i" class="rec-row">
           <div class="rec-meta">
             <span class="rec-name">{{ p.name }}</span>
-            <span class="muted">{{ formatBytes(p.blob.size) }}</span>
+            <span class="muted-txt">{{ formatBytes(p.blob.size) }}</span>
           </div>
           <div class="rec-acts">
-            <a :href="p.url" :download="p.name" class="btn-ghost small">⬇ Save</a>
+            <a :href="p.url" :download="p.name" class="rec-btn rec-btn-sm">⬇ Save</a>
             <button
-              class="btn-primary small"
+              class="rec-btn rec-btn-primary rec-btn-sm"
               :disabled="p.uploading || p.uploaded"
               @click="uploadPending(i)"
-            >
-              {{ p.uploading ? 'Uploading…' : p.uploaded ? '✓ Saved' : 'Upload' }}
-            </button>
+            >{{ p.uploading ? 'Uploading…' : p.uploaded ? '✓ Saved' : 'Upload' }}</button>
           </div>
           <p v-if="p.error" class="field-error">{{ p.error }}</p>
         </div>
-      </div>
+      </section>
 
-      <!-- Saved recordings from server -->
-      <div v-if="loadError" class="section section-border">
-        <p class="state-msg error">{{ loadError }}</p>
-      </div>
-      <div v-else-if="saved.length > 0" class="section section-border">
-        <h2>Your Recordings</h2>
+      <!-- Saved recordings -->
+      <section v-if="loadError" class="rec-panel panel-below">
+        <p class="empty-msg error">{{ loadError }}</p>
+      </section>
+      <section v-else-if="saved.length > 0" class="rec-panel panel-below">
+        <p class="section-label">Your Recordings</p>
         <div v-for="rec in saved" :key="rec.id" class="rec-row">
           <div class="rec-meta">
             <span class="rec-name">{{ rec.filename }}</span>
-            <span class="muted">{{ formatBytes(rec.size_bytes) }} · {{ formatDate(rec.created_at) }}</span>
+            <span class="muted-txt">{{ formatBytes(rec.size_bytes) }} · {{ formatDate(rec.created_at) }}</span>
           </div>
           <div class="custom-player">
-            <button
-              class="play-btn"
-              :disabled="getPlayer(rec.id).loading"
-              @click="togglePlay(rec.id)"
-            >
+            <button class="play-btn" :disabled="getPlayer(rec.id).loading" @click="togglePlay(rec.id)">
               <span v-if="getPlayer(rec.id).loading" class="play-icon">⋯</span>
               <span v-else-if="getPlayer(rec.id).playing" class="play-icon">⏸</span>
               <span v-else class="play-icon">▶</span>
             </button>
-            <span class="time-label">{{ formatTime(getPlayer(rec.id).currentTime) }}</span>
+            <span class="time-label mono-txt">{{ formatTime(getPlayer(rec.id).currentTime) }}</span>
             <div class="seek-wrap">
               <input
                 type="range"
@@ -142,20 +169,21 @@
                 @change="handleSeekChange(rec.id, +($event.target as HTMLInputElement).value)"
               />
             </div>
-            <span class="time-label">{{ formatTime(getPlayer(rec.id).duration) }}</span>
+            <span class="time-label mono-txt">{{ formatTime(getPlayer(rec.id).duration) }}</span>
           </div>
           <div class="rec-acts">
-            <button class="btn-ghost small" @click="downloadRecording(rec.id, rec.filename)">⬇ Download</button>
-            <button class="btn-danger small" @click="deleteRecording(rec.id)">Delete</button>
+            <button class="rec-btn rec-btn-sm" @click="downloadRecording(rec.id, rec.filename)">⬇ Download</button>
+            <button class="rec-btn rec-btn-danger rec-btn-sm" @click="deleteRecording(rec.id)">Delete</button>
           </div>
         </div>
-      </div>
+      </section>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, provide, onMounted, onUnmounted } from 'vue'
+import { ref, provide, computed, onMounted, onUnmounted } from 'vue'
 import { apiFetch } from '../../api'
 import { showSnackBar } from '../../components/subjects/snack-bar-subject'
 import FxDistortion from './components/FxDistortion.vue'
@@ -225,7 +253,29 @@ provide(tremoloFxKey,     tremoloFx)
 provide(chorusFxKey,      chorusFx)
 provide(wahFxKey,         wahFx)
 
-// ---------- Non-reactive audio state (changes on every audio frame) ----------
+// ---------- Active effects + toggle all ----------
+
+const allFx = [distortionFx, eqFx, compressorFx, delayFx, reverbFx, tremoloFx, chorusFx, wahFx]
+const activeCount = computed(() => allFx.filter(fx => fx.state.enabled).length)
+const allOn = computed(() => allFx.every(fx => fx.state.enabled))
+
+function toggleAll() {
+  const val = !allOn.value
+  allFx.forEach(fx => { fx.state.enabled = val })
+}
+
+// ---------- Level meter segments ----------
+
+const SEGS = 24
+const meterSegs = computed(() => {
+  const active = Math.round(inputLevel.value * SEGS)
+  return Array.from({ length: SEGS }, (_, i) => ({
+    on: i < active,
+    color: i >= 21 ? '#f87171' : i >= 16 ? '#facc15' : '#4ade80',
+  }))
+})
+
+// ---------- Non-reactive audio state ----------
 
 let audioCtx: AudioContext | null = null
 let mediaStream: MediaStream | null = null
@@ -238,7 +288,7 @@ let captureMode: 'mono1' | 'mono2' | 'stereo' = 'mono1'
 let channels = 0
 let sampleRate = 0
 
-// ---------- AudioWorklet (defined inline, loaded via blob URL) ----------
+// ---------- AudioWorklet ----------
 
 const WORKLET_CODE = `
 class CaptureProcessor extends AudioWorkletProcessor {
@@ -311,7 +361,7 @@ async function startRecording() {
     return
   }
 
-  audioCtx = new AudioContext()
+  audioCtx = new AudioContext({sampleRate: 48000, latencyHint: 0.005})
   sampleRate = audioCtx.sampleRate
   await audioCtx.audioWorklet.addModule(workletUrl)
 
@@ -329,10 +379,11 @@ async function startRecording() {
   prev = reverbFx.connect(audioCtx, prev)
   prev = wahFx.connect(audioCtx, prev)
   prev.connect(workletNode)
-  workletNode.connect(audioCtx.destination)
 
   recording.value = true
-  status.value = `Recording… (${sampleRate} Hz, ${captureMode})`
+  const baseLat = (audioCtx.baseLatency * 1000).toFixed(1)
+  const outLat  = (audioCtx.outputLatency * 1000).toFixed(1)
+  status.value = `Recording… (${sampleRate} Hz, ${captureMode}) — base ${baseLat} ms / out ${outLat} ms`
 }
 
 function initEncoder(numChannels: number) {
@@ -453,10 +504,7 @@ async function deleteRecording(id: string) {
 
 async function downloadRecording(id: string, filename: string) {
   const p = getPlayer(id)
-  if (p.loaded && p.blobUrl) {
-    triggerDownload(p.blobUrl, filename)
-    return
-  }
+  if (p.loaded && p.blobUrl) { triggerDownload(p.blobUrl, filename); return }
   try {
     const res = await apiFetch(`/api/recordings/${id}`)
     if (!res.ok) { showSnackBar('Failed to download recording.', 'error'); return }
@@ -595,14 +643,8 @@ const players = ref<Record<string, PlayerState>>({})
 function getPlayer(id: string): PlayerState {
   if (!players.value[id]) {
     players.value[id] = {
-      audio: null,
-      blobUrl: null,
-      loaded: false,
-      loading: false,
-      playing: false,
-      currentTime: 0,
-      duration: 0,
-      seeking: false,
+      audio: null, blobUrl: null, loaded: false, loading: false,
+      playing: false, currentTime: 0, duration: 0, seeking: false,
     }
   }
   return players.value[id]
@@ -620,12 +662,8 @@ async function togglePlay(id: string) {
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
       audio.preload = 'auto'
-      audio.addEventListener('timeupdate', () => {
-        if (!p.seeking) p.currentTime = audio.currentTime
-      })
-      audio.addEventListener('durationchange', () => {
-        if (isFinite(audio.duration)) p.duration = audio.duration
-      })
+      audio.addEventListener('timeupdate', () => { if (!p.seeking) p.currentTime = audio.currentTime })
+      audio.addEventListener('durationchange', () => { if (isFinite(audio.duration)) p.duration = audio.duration })
       audio.addEventListener('ended', () => { p.playing = false; p.currentTime = 0 })
       p.blobUrl = url
       p.audio = audio
@@ -644,7 +682,6 @@ async function togglePlay(id: string) {
     p.audio.pause()
     p.playing = false
   } else {
-    // Pause any other playing recordings
     for (const [otherId, other] of Object.entries(players.value)) {
       if (otherId !== id && other.playing && other.audio) {
         other.audio.pause()
@@ -690,7 +727,6 @@ function formatDate(iso: string): string {
 // ---------- Lifecycle ----------
 
 onMounted(async () => {
-  // Set up locateFile BEFORE injecting the script so the WASM binary resolves.
   ;(window as any).Flac = {
     locateFile: (path: string) =>
       `https://cdn.jsdelivr.net/npm/libflacjs@5.4.0/dist/${path}`,
@@ -718,216 +754,417 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* ── Page-level design tokens (cascade into child components via CSS vars) ── */
 .recordings-wrapper {
+  --accent:      #4ade80;
+  --accent-hover:#6ee7a0;
+  --bg:          #0c0f16;
+  --panel:       #141a24;
+  --panel-2:     #11161f;
+  --card:        #161d29;
+  --card-hi:     #1a2230;
+  --border:      #242d3c;
+  --border-sft:  #1d2533;
+  --text:        #eef2f8;
+  --text-muted:  #8a94a6;
+  --dim:         #626e80;
+  --track:       #2a3340;
+  --record:      #d85c40;
+  --record-hi:   #e26a4e;
+
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  background: var(--bg);
-  padding: 2rem;
+  background:
+    radial-gradient(1200px 560px at 78% -8%, color-mix(in srgb, #4ade80 8%, transparent), transparent 60%),
+    radial-gradient(900px 500px at 0% 0%, #182233, transparent 55%),
+    #0c0f16;
+  color: var(--text);
+  font-family: "Space Grotesk", system-ui, sans-serif;
 }
 
-.recordings-card {
-  width: 100%;
-  max-width: 640px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 2.5rem;
-  align-self: flex-start;
+.rec-layout {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 56px 28px 80px;
 }
 
-.label {
+/* ── Header ── */
+.rec-header { margin-bottom: 40px; }
+
+.rec-eyebrow {
   font-family: var(--mono);
-  color: var(--accent);
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 0.4rem;
-}
-
-.subtitle {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin-bottom: 2rem;
-}
-
-h2 {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 13px;
+  letter-spacing: .28em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-family: var(--mono);
-  margin-bottom: 1.25rem;
-}
-
-.section {
+  color: var(--accent);
+  margin: 0 0 14px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 9px;
 }
 
-.section-border {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--border);
+.eyebrow-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  flex-shrink: 0;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-/* .field-label lives in main.css */
-
-.field-input {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem 0.875rem;
+.rec-layout h1 {
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  margin: 0 0 10px;
+  line-height: 1;
   color: var(--text);
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.15s;
-  flex: 1;
-  font-family: inherit;
 }
 
-.field-input:focus {
-  border-color: var(--accent);
-}
-
-.field-input::placeholder {
+.rec-lede {
   color: var(--text-muted);
+  font-size: 17px;
+  margin: 0;
+  max-width: 60ch;
 }
 
-.field-select {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.6rem 0.875rem;
-  color: var(--text);
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.15s;
-  flex: 1;
+/* ── Two-column grid ── */
+.rec-grid {
+  display: grid;
+  grid-template-columns: 392px 1fr;
+  gap: 24px;
+  align-items: start;
 }
 
-.field-select:focus {
-  border-color: var(--accent);
+@media (max-width: 900px) {
+  .rec-grid { grid-template-columns: 1fr; }
+  .capture-panel { position: static !important; }
 }
 
-.field-select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* ── Panels ── */
+.rec-panel {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+  border: 1px solid var(--border-sft);
+  border-radius: 16px;
+  padding: 26px;
 }
 
-.row-group {
-  display: flex;
-  gap: 0.5rem;
+.capture-panel {
+  position: sticky;
+  top: 28px;
 }
 
-.btn-row {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+.panel-below { margin-top: 24px; }
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 0 0 18px;
 }
 
-.btn-record {
-  background: #c0392b;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  font-family: inherit;
+/* ── Form fields ── */
+.rec-field { margin-bottom: 18px; }
+
+.rec-field > label {
+  display: block;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 9px;
+  font-weight: 500;
 }
 
-.btn-record:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.row-g { display: flex; gap: 10px; }
+.row-g .select-wrap { flex: 1; }
+
+.select-wrap { position: relative; }
+
+.select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 16px; top: 50%;
+  width: 9px; height: 9px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
 }
 
-.btn-stop {
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s, border-color 0.15s;
-  font-family: inherit;
-}
-
-.btn-stop:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.level-bar {
+.select-wrap select {
   width: 100%;
-  height: 10px;
-  border-radius: 5px;
-  accent-color: var(--accent);
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 14px 40px 14px 15px;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  outline: none;
+}
+.select-wrap select:hover { border-color: #303b4d; }
+.select-wrap select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.select-wrap select:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Buttons ── */
+.rec-btn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 11px;
+  padding: 0 18px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 49px;
+  white-space: nowrap;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.rec-btn:hover:not(:disabled) { border-color: #3a4658; background: var(--card-hi); }
+.rec-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.rec-btn-sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 9px; }
+
+.rec-btn-primary {
+  background: var(--accent);
+  color: #0c0f16;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.rec-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
-.status-msg {
-  font-size: 0.85rem;
+.rec-btn-danger { border-color: #f87171; color: #f87171; background: none; }
+.rec-btn-danger:hover:not(:disabled) { background: #f87171; color: #fff; border-color: #f87171; }
+
+/* ── Transport ── */
+.transport { display: flex; gap: 12px; margin: 22px 0 6px; }
+
+.btn-rec {
+  flex: 1;
+  height: 54px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(180deg, var(--record-hi), var(--record));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 8px 22px -10px var(--record), inset 0 1px 0 rgba(255,255,255,.18);
+  transition: transform .12s, filter .15s;
+}
+.btn-rec:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-rec:active:not(:disabled) { transform: translateY(1px); }
+.btn-rec:disabled:not(.live) { opacity: .45; cursor: not-allowed; }
+.btn-rec.live {
+  background: linear-gradient(180deg, #2a3240, #20262f);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.recdot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+}
+.btn-rec.live .recdot {
+  background: var(--record);
+  animation: rec-pulse 1.1s ease-in-out infinite;
+}
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .35; transform: scale(.8); }
+}
+
+.btn-stop { width: 118px; }
+
+/* ── Level meter ── */
+.meter-section { margin-top: 20px; }
+
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font-size: 14px;
   color: var(--text-muted);
+  font-weight: 500;
+}
+
+.mono-txt {
   font-family: var(--mono);
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: .04em;
+}
+
+.meter {
+  display: flex;
+  gap: 3px;
+  height: 26px;
+  padding: 6px;
+  border-radius: 10px;
+  background: #0c1119;
+  border: 1px solid var(--border-sft);
+}
+
+.meter-seg {
+  flex: 1;
+  border-radius: 3px;
+  background: #1b222e;
+  transition: background .06s, box-shadow .06s;
+}
+
+.meter-seg--on {
+  background: var(--segc);
+  box-shadow: 0 0 9px -1px var(--segc);
+}
+
+.meter-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  letter-spacing: .05em;
+}
+
+.rec-status {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
   min-height: 1.4rem;
 }
+.rec-status--live { color: var(--record-hi); }
 
+/* ── Effects section ── */
+.effects-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.effects-head-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.effects-head-left .section-label { margin-bottom: 0; }
+
+.count-chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  letter-spacing: .04em;
+  padding: 6px 4px;
+  transition: color .15s;
+}
+.link-btn:hover { color: var(--text); }
+
+.fx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+/* ── Profile name input ── */
+.rec-input {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 14px 15px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+  flex: 1;
+  min-width: 0;
+  height: 49px;
+}
+.rec-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.rec-input::placeholder { color: var(--text-muted); }
+
+/* ── List rows ── */
 .rec-row {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border);
+  padding: .75rem 0;
+  border-bottom: 1px solid var(--border-sft);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: .5rem;
 }
+.rec-row:last-child { border-bottom: none; }
 
-.rec-row:last-child {
-  border-bottom: none;
-}
-
-.rec-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
+.rec-meta { display: flex; flex-direction: column; gap: .2rem; }
 
 .rec-name {
   font-family: var(--mono);
-  font-size: 0.9rem;
+  font-size: .9rem;
   font-weight: 500;
   word-break: break-all;
+  color: var(--text);
 }
 
-/* .muted lives in main.css */
-
-.rec-acts {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+.muted-txt {
+  font-size: .8rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
 }
 
+.rec-acts { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+.empty-msg { color: var(--text-muted); font-size: .9rem; padding: 1rem 0; }
+.empty-msg.error { color: #f87171; }
+.field-error { font-size: .8rem; color: #f87171; }
+
+/* ── Audio player ── */
 .custom-player {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: .6rem;
   width: 100%;
-  margin-top: 0.25rem;
 }
 
 .play-btn {
@@ -937,39 +1174,20 @@ h2 {
   color: var(--text);
   cursor: pointer;
   padding: 0;
-  width: 28px;
-  height: 28px;
+  width: 28px; height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: color 0.15s;
+  transition: color .15s;
 }
-
 .play-btn:hover:not(:disabled) { color: var(--accent); }
-.play-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.play-btn:disabled { opacity: .4; cursor: not-allowed; }
+.play-icon { font-size: 1rem; line-height: 1; pointer-events: none; }
 
-.play-icon {
-  font-size: 1rem;
-  line-height: 1;
-  pointer-events: none;
-}
+.time-label { flex-shrink: 0; min-width: 2.8rem; text-align: center; }
 
-.time-label {
-  flex-shrink: 0;
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  min-width: 2.8rem;
-  text-align: center;
-}
-
-.seek-wrap {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  height: 20px;
-}
+.seek-wrap { flex: 1; display: flex; align-items: center; height: 20px; }
 
 .seek-slider {
   --pct: 0%;
@@ -978,141 +1196,26 @@ h2 {
   width: 100%;
   height: 4px;
   border-radius: 4px;
-  background: linear-gradient(
-    to right,
-    var(--accent) var(--pct),
-    var(--border) var(--pct)
-  );
+  background: linear-gradient(to right, var(--accent) var(--pct), var(--border) var(--pct));
   outline: none;
   cursor: pointer;
-  transition: height 0.12s;
+  transition: height .12s;
 }
-
 .seek-slider:hover { height: 6px; }
-
-.seek-slider:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
+.seek-slider:disabled { opacity: .35; cursor: not-allowed; }
 .seek-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 0;
-  height: 0;
+  width: 0; height: 0;
   background: #fff;
   border-radius: 50%;
-  transition: width 0.12s, height 0.12s;
+  transition: width .12s, height .12s;
 }
-
-.seek-slider:hover::-webkit-slider-thumb {
-  width: 14px;
-  height: 14px;
-}
-
+.seek-slider:hover::-webkit-slider-thumb { width: 14px; height: 14px; }
 .seek-slider::-moz-range-thumb {
-  width: 0;
-  height: 0;
+  width: 0; height: 0;
   background: #fff;
   border: none;
   border-radius: 50%;
-  transition: width 0.12s, height 0.12s;
 }
-
-.seek-slider:hover::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-}
-
-.btn-primary {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-  font-family: inherit;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.btn-primary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.btn-ghost {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  border-radius: 8px;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-  font-family: inherit;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.btn-ghost:hover:not(:disabled) {
-  border-color: var(--text-muted);
-  color: var(--text);
-}
-
-.btn-ghost:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.btn-primary.small,
-.btn-ghost.small {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
-}
-
-.btn-danger {
-  background: none;
-  border: 1px solid #f87171;
-  color: #f87171;
-  border-radius: 8px;
-  padding: 0.55rem 1.1rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  font-family: inherit;
-}
-
-.btn-danger:hover {
-  background: #f87171;
-  color: #fff;
-}
-
-.btn-danger.small {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
-}
-
-.field-error {
-  font-size: 0.8rem;
-  color: #f87171;
-}
-
-.state-msg {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  padding: 1rem 0;
-}
-
-.state-msg.error {
-  color: #f87171;
-}
-
-/* toggle-switch, fx-* live in EffectBlock.vue */
+.seek-slider:hover::-moz-range-thumb { width: 14px; height: 14px; }
 </style>

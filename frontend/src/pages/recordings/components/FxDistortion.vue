@@ -1,9 +1,16 @@
 <template>
-  <EffectBlock label="Distortion" v-model="state.enabled">
-    <div class="fx-knob">
-      <label class="field-label">Drive</label>
-      <input type="range" class="fx-slider" v-model.number="state.drive" min="0" max="100" step="1" />
-      <span class="fx-val muted">{{ state.drive }}%</span>
+  <EffectBlock label="Distortion" sub="Harmonic overdrive" tint="#f97316" v-model="state.enabled">
+    <template #icon>
+      <svg viewBox="0 0 21 21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1,13 5,13 7,5 9,5 11,16 13,16 15,8 20,8" />
+      </svg>
+    </template>
+    <div class="ctrl">
+      <div class="ctrl-head">
+        <label>Drive</label>
+        <span class="val">{{ state.drive }}%</span>
+      </div>
+      <input type="range" v-model.number="state.drive" min="0" max="100" step="1" />
     </div>
   </EffectBlock>
 </template>
