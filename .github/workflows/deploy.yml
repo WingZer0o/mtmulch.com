@@ -75,7 +75,7 @@ jobs:
           RUNNER_IP=$(curl -s https://api.ipify.org)
           az postgres flexible-server firewall-rule create \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name rust-playground \
+            --name rust-playground-pg \
             --rule-name github-actions-runner \
             --start-ip-address $RUNNER_IP \
             --end-ip-address $RUNNER_IP
@@ -89,7 +89,7 @@ jobs:
       - name: Run migrations
         env:
           PGPASSWORD: ${{ steps.db-token.outputs.token }}
-          DATABASE_URL: postgres://${{ steps.db-token.outputs.sp_name }}@rust-playground.postgres.database.azure.com:5432/rust_playground?sslmode=require
+          DATABASE_URL: postgres://${{ steps.db-token.outputs.sp_name }}@rust-playground-pg.postgres.database.azure.com:5432/rust_playground?sslmode=require
         run: diesel migration run
 
       - name: Remove runner IP from PostgreSQL firewall
@@ -97,7 +97,7 @@ jobs:
         run: |
           az postgres flexible-server firewall-rule delete \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name rust-playground \
+            --name rust-playground-pg \
             --rule-name github-actions-runner \
             --yes
 
