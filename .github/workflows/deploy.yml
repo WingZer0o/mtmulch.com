@@ -75,8 +75,8 @@ jobs:
           RUNNER_IP=$(curl -s https://api.ipify.org)
           az postgres flexible-server firewall-rule create \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name rust-playground-pg \
-            --rule-name github-actions-runner \
+            --server-name rust-playground-pg \
+            --name github-actions-runner \
             --start-ip-address $RUNNER_IP \
             --end-ip-address $RUNNER_IP
 
@@ -97,8 +97,8 @@ jobs:
         run: |
           az postgres flexible-server firewall-rule delete \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name rust-playground-pg \
-            --rule-name github-actions-runner \
+            --server-name rust-playground-pg \
+            --name github-actions-runner \
             --yes
 
   build-and-deploy:
