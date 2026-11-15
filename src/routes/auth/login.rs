@@ -201,6 +201,15 @@ pub async fn post_login(
         )
         .execute(&mut conn)?;
 
+        // Invalidate any still-live codes so only the newest one is ever valid
+        diesel::update(
+            otp_codes::table.filter(
+                otp_codes::user_id.eq(user_id).and(otp_codes::used.eq(false)),
+            ),
+        )
+        .set(otp_codes::used.eq(true))
+        .execute(&mut conn)?;
+
         let code = rand::thread_rng().gen_range(100_000u32..=999_999u32).to_string();
 
         diesel::insert_into(otp_codes::table)

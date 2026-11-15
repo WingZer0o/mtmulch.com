@@ -44,7 +44,9 @@
               required
             />
           </div>
-          <button type="submit" class="btn-primary">Sign in</button>
+          <button type="submit" class="btn-primary" :disabled="signingIn">
+            {{ signingIn ? 'Signing in…' : 'Sign in' }}
+          </button>
         </v-form>
 
         <p class="switch">
@@ -167,6 +169,7 @@ const showOtpDialog = ref(false);
 const otpCode = ref('');
 const otpError = ref(false);
 const verifying = ref(false);
+const signingIn = ref(false);
 
 async function loadProfileImage() {
   try {
@@ -185,6 +188,8 @@ function cancelOtp() {
 }
 
 async function handleLogin() {
+  if (signingIn.value) return;
+  signingIn.value = true;
   const body: LoginRequest = new LoginRequest(login.email, login.password);
   try {
     const res = await fetch('/api/auth/login', {
@@ -224,6 +229,8 @@ async function handleLogin() {
     }
   } catch {
     showSnackBar('Network error', 'error');
+  } finally {
+    signingIn.value = false;
   }
 }
 
