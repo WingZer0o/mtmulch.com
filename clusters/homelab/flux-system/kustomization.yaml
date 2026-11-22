@@ -1,0 +1,9 @@
+# Flux's own components and the Git sync for the home-lab cluster.
+# gotk-components.yaml is generated:
+#   flux install --export --components-extra=image-reflector-controller,image-automation-controller
+# Re-run that to upgrade Flux; Flux then applies its own upgrade from Git.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - gotk-components.yaml
+  - gotk-sync.yaml

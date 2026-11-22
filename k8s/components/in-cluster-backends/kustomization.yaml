@@ -1,0 +1,10 @@
+# Postgres + Azurite running inside the cluster, for environments without managed
+# Azure services (local k3s, home lab). AKS uses Azure Postgres/Blob instead.
+#
+# Expects the overlay to provide an `api-secrets` Secret containing POSTGRES_PASSWORD.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - postgres.yaml
+  - azurite.yaml

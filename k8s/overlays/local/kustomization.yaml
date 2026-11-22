@@ -8,8 +8,9 @@ namespace: mtmulch
 resources:
   - namespace.yaml
   - ../../base
-  - postgres.yaml
-  - azurite.yaml
+
+components:
+  - ../../components/in-cluster-backends
 
 # Images are built locally and imported into k3s's containerd by deploy-local.sh.
 # A non-"latest" tag makes the pull policy IfNotPresent, so k3s uses the imported copy.

@@ -1,0 +1,24 @@
+# Deploys the website (k8s/overlays/homelab) and keeps it in sync with Git.
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: mtmulch
+  namespace: flux-system
+spec:
+  interval: 5m0s
+  path: ./k8s/overlays/homelab
+  prune: true
+  # The migrate Job is immutable; when its image tag changes Flux must delete and
+  # recreate it (which re-runs migrations) instead of failing to patch it.
+  force: true
+  timeout: 5m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  # secrets.sops.yaml is encrypted with the lab's age key, stored in-cluster as
+  # the `sops-age` Secret (created by clusters/homelab/bootstrap.sh).
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
