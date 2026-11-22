@@ -17,6 +17,15 @@ spec:
       labels:
         app.kubernetes.io/name: postgres
     spec:
+      # Run as the image's `postgres` user (uid/gid 999) from the start. Started as
+      # root, the entrypoint drops privileges with `gosu`, which hung at 100% CPU on
+      # the home-lab machine before Postgres ever launched. Non-root also skips that
+      # step entirely and is the safer default.
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        runAsNonRoot: true
+        fsGroup: 999
       containers:
         - name: postgres
           image: postgres:18
