@@ -1,0 +1,66 @@
+# Home-lab k3s cluster (spare machine on the LAN), deployed by Flux.
+# See clusters/homelab/ for the Flux side and clusters/homelab/README.md for setup.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mtmulch
+resources:
+  - namespace.yaml
+  - ../../base
+  # SOPS-encrypted with the lab's age key; Flux decrypts it in-cluster.
+  # Edit with:  sops k8s/overlays/homelab/secrets.sops.yaml
+  - secrets.sops.yaml
+  # Postgres on the lab's LAN IP for pgAdmin etc. (home network only).
+  - postgres-lan.yaml
+components:
+  - ../../components/in-cluster-backends
+# Built by .github/workflows/homelab-images.yml and pushed to GHCR.
+# The tags are rewritten by Flux image automation (clusters/homelab/image-automation.yaml)
+# via the {"$imagepolicy": ...} markers — don't edit them by hand.
+images:
+  - name: mtmulch-api
+    newName: ghcr.io/wingzer0o/mtmulch-api # {"$imagepolicy": "flux-system:mtmulch-api:name"}
+    newTag: homelab-flux-038518b-1795306464 # {"$imagepolicy": "flux-system:mtmulch-api:tag"}
+  - name: mtmulch-web
+    newName: ghcr.io/wingzer0o/mtmulch-web # {"$imagepolicy": "flux-system:mtmulch-web:name"}
+    newTag: homelab-flux-038518b-1795306464 # {"$imagepolicy": "flux-system:mtmulch-web:tag"}
+  - name: mtmulch-migrate
+    newName: ghcr.io/wingzer0o/mtmulch-migrate # {"$imagepolicy": "flux-system:mtmulch-migrate:name"}
+    newTag: homelab-flux-038518b-1795306464 # {"$imagepolicy": "flux-system:mtmulch-migrate:tag"}
+configMapGenerator:
+  - name: api-config
+    literals:
+      # The lab machine's LAN address (give it a DHCP reservation so it doesn't change).
+      - APP_DOMAIN=https://192.168.50.226
+      - AZURE_STORAGE_CONTAINER=recordings
+      # Azurite's published, well-known development key.
+      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tiqSDJLanD/;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+patches:
+  # Ubuntu 26.04 + k3s's containerd: the container's AppArmor profile gets
+  # "stacked" (cri-containerd.apparmor.d//&unconfined), and that profile only lets
+  # processes signal peers labelled exactly cri-containerd.apparmor.d — so processes
+  # inside the same container can't signal each other. Postgres backends use
+  # SIGURG/SIGTERM internally and hang ("authentication" never finishes).
+  # Kernel log: apparmor="DENIED" operation="signal" comm="postgres" signal=urg.
+  # Exempt only Postgres; single-process containers (api, web, azurite) are unaffected.
+  - target:
+      kind: StatefulSet
+      name: postgres
+    patch: |-
+      - op: add
+        path: /spec/template/spec/securityContext/appArmorProfile
+        value:
+          type: Unconfined
+  # Serve over HTTPS only, using Traefik's built-in self-signed certificate.
+  # The app's auth cookie is `Secure`, which browsers only accept over HTTPS
+  # (or http://localhost). Expect a certificate warning until real TLS is added.
+  - target:
+      kind: Ingress
+      name: mtmulch
+    patch: |-
+      - op: remove
+        path: /spec/rules/0/host
+      - op: add
+        path: /metadata/annotations
+        value:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"

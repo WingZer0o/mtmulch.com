@@ -1,0 +1,25 @@
+# Exposes the lab's Postgres on the lab machine's own LAN address
+# (192.168.50.226:5432) so tools like pgAdmin can connect without a port-forward.
+# k3s's built-in ServiceLB binds the port on the node.
+#
+# - Only clients on the home network (192.168.50.0/24) are allowed in.
+# - Remote connections need the password (pg_hba: scram-sha-256); it's
+#   POSTGRES_PASSWORD in secrets.sops.yaml.
+# - No TLS: fine on a home LAN, but keep real user data out of this database.
+# - Lab only — never expose a database like this on AKS.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-lan
+  labels:
+    app.kubernetes.io/name: postgres
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+  loadBalancerSourceRanges:
+    - 192.168.50.0/24

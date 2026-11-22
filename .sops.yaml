@@ -1,0 +1,7 @@
+# SOPS rules: which files are encrypted, and for whom.
+# The matching age private key lives at ~/.config/sops/age/keys.txt (never in Git)
+# and in the home-lab cluster as the flux-system/sops-age Secret.
+creation_rules:
+  - path_regex: k8s/overlays/homelab/.*\.sops\.yaml$
+    encrypted_regex: ^(data|stringData)$
+    age: age12p5nw08zmda02hfkpyuz32887qfcmlfz3566rsrkx8f3deqajsws0s3tw2

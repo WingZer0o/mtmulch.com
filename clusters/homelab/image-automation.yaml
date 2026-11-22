@@ -1,0 +1,97 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: mtmulch-api
+  namespace: flux-system
+spec:
+  image: ghcr.io/wingzer0o/mtmulch-api
+  interval: 5m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: mtmulch-api
+  namespace: flux-system
+spec:
+  filterTags:
+    extract: $ts
+    pattern: ^homelab-flux-[a-f0-9]+-(?P<ts>[0-9]+)$
+  imageRepositoryRef:
+    name: mtmulch-api
+  policy:
+    numerical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: mtmulch-web
+  namespace: flux-system
+spec:
+  image: ghcr.io/wingzer0o/mtmulch-web
+  interval: 5m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: mtmulch-web
+  namespace: flux-system
+spec:
+  filterTags:
+    extract: $ts
+    pattern: ^homelab-flux-[a-f0-9]+-(?P<ts>[0-9]+)$
+  imageRepositoryRef:
+    name: mtmulch-web
+  policy:
+    numerical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: mtmulch-migrate
+  namespace: flux-system
+spec:
+  image: ghcr.io/wingzer0o/mtmulch-migrate
+  interval: 5m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: mtmulch-migrate
+  namespace: flux-system
+spec:
+  filterTags:
+    extract: $ts
+    pattern: ^homelab-flux-[a-f0-9]+-(?P<ts>[0-9]+)$
+  imageRepositoryRef:
+    name: mtmulch-migrate
+  policy:
+    numerical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: mtmulch
+  namespace: flux-system
+spec:
+  git:
+    checkout:
+      ref:
+        branch: homelab-flux
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: 'chore(homelab): update images [skip ci]'
+    push:
+      branch: homelab-flux
+  interval: 5m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  update:
+    path: ./k8s/overlays/homelab
+    strategy: Setters

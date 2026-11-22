@@ -1,0 +1,30 @@
+# Runs `diesel migration run` against DATABASE_URL.
+# Jobs are immutable: deploy-local.sh deletes this before re-applying, and Flux
+# recreates it (Kustomization `force: true`) whenever the migrate image changes.
+# If Postgres isn't accepting connections yet the pod fails and the Job retries.
+#
+# No ttlSecondsAfterFinished: under Flux, a TTL-deleted Job counts as drift and
+# would be recreated (re-running migrations) on every reconcile.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  labels:
+    app.kubernetes.io/name: migrate
+spec:
+  backoffLimit: 10
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: migrate
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: mtmulch-migrate
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: DATABASE_URL

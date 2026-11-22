@@ -1,0 +1,7 @@
+target
+debug
+postgres_data
+frontend/node_modules
+frontend/dist
+.git
+k8s/overlays/*/secrets.env
