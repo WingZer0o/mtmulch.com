@@ -9,6 +9,8 @@ resources:
   # SOPS-encrypted with the lab's age key; Flux decrypts it in-cluster.
   # Edit with:  sops k8s/overlays/homelab/secrets.sops.yaml
   - secrets.sops.yaml
+  # Postgres on the lab's LAN IP for pgAdmin etc. (home network only).
+  - postgres-lan.yaml
 components:
   - ../../components/in-cluster-backends
 # Built by .github/workflows/homelab-images.yml and pushed to GHCR.
