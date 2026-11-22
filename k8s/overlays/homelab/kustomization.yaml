@@ -2,33 +2,28 @@
 # See clusters/homelab/ for the Flux side and clusters/homelab/README.md for setup.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 namespace: mtmulch
-
 resources:
   - namespace.yaml
   - ../../base
   # SOPS-encrypted with the lab's age key; Flux decrypts it in-cluster.
   # Edit with:  sops k8s/overlays/homelab/secrets.sops.yaml
   - secrets.sops.yaml
-
 components:
   - ../../components/in-cluster-backends
-
 # Built by .github/workflows/homelab-images.yml and pushed to GHCR.
 # The tags are rewritten by Flux image automation (clusters/homelab/image-automation.yaml)
 # via the {"$imagepolicy": ...} markers — don't edit them by hand.
 images:
   - name: mtmulch-api
     newName: ghcr.io/wingzer0o/mtmulch-api # {"$imagepolicy": "flux-system:mtmulch-api:name"}
-    newTag: pending # {"$imagepolicy": "flux-system:mtmulch-api:tag"}
+    newTag: homelab-flux-038518b-1795306464 # {"$imagepolicy": "flux-system:mtmulch-api:tag"}
   - name: mtmulch-web
     newName: ghcr.io/wingzer0o/mtmulch-web # {"$imagepolicy": "flux-system:mtmulch-web:name"}
-    newTag: pending # {"$imagepolicy": "flux-system:mtmulch-web:tag"}
+    newTag: homelab-flux-038518b-1795306464 # {"$imagepolicy": "flux-system:mtmulch-web:tag"}
   - name: mtmulch-migrate
     newName: ghcr.io/wingzer0o/mtmulch-migrate # {"$imagepolicy": "flux-system:mtmulch-migrate:name"}
-    newTag: pending # {"$imagepolicy": "flux-system:mtmulch-migrate:tag"}
-
+    newTag: homelab-flux-038518b-1795306464 # {"$imagepolicy": "flux-system:mtmulch-migrate:tag"}
 configMapGenerator:
   - name: api-config
     literals:
@@ -37,7 +32,6 @@ configMapGenerator:
       - AZURE_STORAGE_CONTAINER=recordings
       # Azurite's published, well-known development key.
       - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tiqSDJLanD/;BlobEndpoint=http://azurite:10000/devstoreaccount1;
-
 patches:
   # Serve over HTTPS only, using Traefik's built-in self-signed certificate.
   # The app's auth cookie is `Secure`, which browsers only accept over HTTPS
