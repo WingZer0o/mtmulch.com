@@ -33,6 +33,21 @@ configMapGenerator:
       # Azurite's published, well-known development key.
       - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tiqSDJLanD/;BlobEndpoint=http://azurite:10000/devstoreaccount1;
 patches:
+  # Ubuntu 26.04 + k3s's containerd: the container's AppArmor profile gets
+  # "stacked" (cri-containerd.apparmor.d//&unconfined), and that profile only lets
+  # processes signal peers labelled exactly cri-containerd.apparmor.d — so processes
+  # inside the same container can't signal each other. Postgres backends use
+  # SIGURG/SIGTERM internally and hang ("authentication" never finishes).
+  # Kernel log: apparmor="DENIED" operation="signal" comm="postgres" signal=urg.
+  # Exempt only Postgres; single-process containers (api, web, azurite) are unaffected.
+  - target:
+      kind: StatefulSet
+      name: postgres
+    patch: |-
+      - op: add
+        path: /spec/template/spec/securityContext/appArmorProfile
+        value:
+          type: Unconfined
   # Serve over HTTPS only, using Traefik's built-in self-signed certificate.
   # The app's auth cookie is `Secure`, which browsers only accept over HTTPS
   # (or http://localhost). Expect a certificate warning until real TLS is added.
