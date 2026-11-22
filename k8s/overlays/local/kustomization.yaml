@@ -1,0 +1,48 @@
+# Local k3s (WSL) environment: in-cluster Postgres + Azurite, served at http://localhost.
+# Deploy with:  ./k8s/deploy-local.sh
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: mtmulch
+
+resources:
+  - namespace.yaml
+  - ../../base
+  - postgres.yaml
+  - azurite.yaml
+
+# Images are built locally and imported into k3s's containerd by deploy-local.sh.
+# A non-"latest" tag makes the pull policy IfNotPresent, so k3s uses the imported copy.
+images:
+  - name: mtmulch-api
+    newTag: local
+  - name: mtmulch-web
+    newTag: local
+  - name: mtmulch-migrate
+    newTag: local
+
+configMapGenerator:
+  - name: api-config
+    literals:
+      # Reached from Windows via `kubectl port-forward` to Traefik (see deploy-local.sh).
+      # Must be localhost (not the WSL IP) so browsers accept the app's Secure cookies over http.
+      - APP_DOMAIN=http://localhost:8088
+      - AZURE_STORAGE_CONTAINER=recordings
+      # Azurite's published, well-known development key (same as docker-compose.local.yml).
+      - AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tiqSDJLanD/;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+
+# secrets.env is gitignored; deploy-local.sh creates it with random keys on first run.
+# See secrets.env.example for the expected keys.
+secretGenerator:
+  - name: api-secrets
+    envs:
+      - secrets.env
+
+patches:
+  # Match any Host header locally (localhost:8088 via port-forward, or the WSL IP).
+  - target:
+      kind: Ingress
+      name: mtmulch
+    patch: |-
+      - op: remove
+        path: /spec/rules/0/host
